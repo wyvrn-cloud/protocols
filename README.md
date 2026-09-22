@@ -48,3 +48,12 @@ implementing it would move to the real `didcomm.org` PIURI.
 | Protocol | Version | Status | Used by |
 |---|---|---|---|
 | [`group-chat`](protocols/group-chat/1.0/readme.md) | 1.0 | Proposed | [`wyvrn-chat`](../wyvrn-chat) |
+| [`multi-device`](protocols/multi-device/1.0/readme.md) | 1.0 | Proposed | none yet — design proposal |
+| [`history-sync`](protocols/history-sync/1.0/readme.md) | 1.0 | Proposed | none yet — design proposal |
+
+`multi-device` and `history-sync` are companion protocols for the same
+problem (one person, several devices, no central account server) and are
+meant to be read together: `multi-device` covers device identity/enrollment
+and the device roster; `history-sync` covers reconciling message history
+and other local state between devices it references, including catching up
+a newly enrolled device.
