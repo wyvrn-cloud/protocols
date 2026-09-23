@@ -94,20 +94,28 @@ contacts). Alice creates a group and adds Bob:
 3. Bob receives it and creates a local `member` record for the group with
    the given membership list. Bob is now a member with no further action.
 4. Either party sends group content by fanning a `basicmessage/2.0/message`
-   out individually to every *other* member:
+   out individually to every *other* member, setting the envelope-level
+   `pthid` ("parent thread id") to the group's id:
    ```json
    {
      "id": "3c68cad6-00bd-496d-8cc6-4a188cb086b0",
      "type": "https://didcomm.org/basicmessage/2.0/message",
+     "pthid": "b1f6c1d2-3e4f-4a5b-8c6d-7e8f9a0b1c2d",
      "body": {
-       "content": "anyone free saturday?",
-       "group_id": "b1f6c1d2-3e4f-4a5b-8c6d-7e8f9a0b1c2d"
+       "content": "anyone free saturday?"
      }
    }
    ```
-   A recipient who sees `body.group_id` routes the message into that
-   group's conversation, with `from` as the sender, instead of treating it
-   as a 1:1 message from that DID.
+   A recipient who sees `pthid` set to a group id it knows about routes the
+   message into that group's conversation, with `from` as the sender,
+   instead of treating it as a 1:1 message from that DID. This is a
+   standard DIDComm v2 envelope field, not a custom body field --
+   `basicmessage/2.0`'s own spec lists `content` as its only body attribute
+   and explicitly puts both threading and group messaging out of scope for
+   the protocol itself, so group membership belongs in the field the base
+   spec already defines for exactly this kind of thing, not an
+   unrecognized field a non-wyvrn implementation would have no way to
+   interpret.
 5. Later, Alice adds Carol:
    - Alice updates her own local membership to `[Alice, Bob, Carol]`.
    - Alice sends Carol an `invite` with the full 3-member list.
@@ -203,13 +211,14 @@ whenever a member adds someone.
 
 ### Group content (`basicmessage/2.0/message`, extended)
 
-No new message type — the existing
+No new message type and no new body field — the existing
 [`basicmessage/2.0`](https://didcomm.org/basicmessage/2.0) `message` type,
-with one added body field:
+unchanged, with the standard DIDComm v2 envelope-level `pthid` field used to
+carry the group id:
 
 | Field | Type | Description |
 |---|---|---|
-| `group_id` | string | Present only on group content; its absence means the message is an ordinary 1:1 basic message. |
+| `pthid` | string | The group this message belongs to. Its absence means the message is an ordinary 1:1 basic message. |
 
 Sent individually (fanned out) to every member except the sender.
 
