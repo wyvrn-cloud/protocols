@@ -39,9 +39,22 @@ device, never broadcast.
 A DIDComm mediator is a transient relay, not an archive — content is
 removed from its queue once picked up and acknowledged, by design (see
 `messagepickup/3.0`). That means a device enrolled after some history
-already exists, or one that was offline for a while, has no way to recover
-anything from the mediator itself; whatever it's missing can only come
-from another device that still has it.
+already exists, or one that was offline longer than the mediator's own
+retention/queue window, has no way to recover anything from the mediator
+itself; whatever it's missing can only come from another device that still
+has it.
+
+Since [`multi-device/1.0`](../../multi-device/1.0/readme.md) copies the
+Identity DID's own content key to every enrolled device, an *ordinary*
+offline period is usually a non-issue for message content specifically —
+a device that reconnects while the mediator still holds a message
+addressed to the shared Identity DID can pick it up directly, independent
+of any sibling. This protocol's real, narrower job is what that doesn't
+cover: catching up a device that's newly enrolled (everything that existed
+before it joined), recovering from an offline period that outlasted the
+mediator's own retention window, and reconciling local state that was
+never part of shared-content delivery in the first place — contacts,
+groups, read state, and the device roster itself.
 
 The obvious approach — every device eventually holds a full copy of
 everything — doesn't fit real devices. A phone has meaningfully less
@@ -253,6 +266,23 @@ holds, and whether it has more beyond that:
   retention specifically so a `backfill-request` almost always has
   somewhere left to succeed — but this protocol does not require or
   enforce that choice.
+- **A device should prefer an unbounded-retention sibling when choosing
+  who to send a `backfill-request` to**, using
+  [`multi-device/1.0`](../../multi-device/1.0/readme.md)'s
+  `device-announce.retention` field to skip a known-`"bounded"` sibling
+  entirely rather than asking it and getting an empty
+  `backfill-response` back. This is a request-time optimization only —
+  nothing stops a device from asking a bounded sibling anyway (e.g. it's
+  the only one currently reachable), it just shouldn't be the first
+  choice when a better-odds sibling is known.
+- **An item received via `backfill-response` is persisted into local
+  storage exactly like any other item this protocol delivers**, subject to
+  the requesting device's own retention policy on its next ordinary
+  cleanup pass — not held in some separate, ephemeral "viewing cache" that
+  forgets it once the person scrolls away. This keeps exactly one code
+  path for "do I already have this item locally," and means scrolling back
+  over the same range twice in one session only ever costs one
+  `backfill-request`, not one per visit.
 - **`collection_id` is deliberately generic**, not hardcoded to messages.
   `messages:<conversation_id>` is the large, usually-chunked case; small
   local state like `contacts`, `groups`, and even the `multi-device/1.0`
@@ -271,10 +301,11 @@ holds, and whether it has more beyond that:
 
 - This protocol only ever runs between a person's own enrolled devices
   (per `multi-device/1.0`'s roster), so its message trust context is the
-  same as that protocol's: possession of the shared control keypair (used
-  to register the messaging DID a `history-sync/1.0` message is
-  authenticated with) is what makes a peer trusted here at all. It defines
-  no new trust boundary of its own.
+  same as that protocol's: every message here is sent device-to-device
+  using each device's own independent Device DID (never the shared
+  Identity DID), and being enrolled at all — holding a copy of the
+  Identity DID's keys — is what makes a peer trusted here. It defines no
+  new trust boundary of its own.
 - Content confidentiality is exactly what pairwise DIDComm v2 encryption
   between the two specific devices already provides; there is no
   additional encryption layer here, and no content is ever exposed to the
@@ -398,12 +429,8 @@ _(none yet)_ | Proposed alongside [`multi-device/1.0`](../../multi-device/1.0/re
   (today: one flat `chunk-members-response` per mismatched chunk), if
   `chunk_size` ever needs to be large enough that a single member-list
   response becomes unwieldy on its own.
-- Whether an item fetched only for on-demand `backfill-request` display
-  gets persisted back into local storage (subject to the same retention
-  policy on the next cleanup pass) or stays purely ephemeral for that
-  viewing session — left as an implementation choice for now, not
-  specified here.
-- A way to signal "don't bother asking me, I'm intentionally
-  short-retention for everything," so a backfill requester can skip
-  known-bounded siblings and go straight to whichever device is more
-  likely to actually hold the answer.
+- A dedicated collection-level "don't bother asking me for old content, I
+  never retain any" signal, finer-grained than `multi-device/1.0`'s
+  blanket per-device `retention` field, if a device ever wants to keep
+  some collections unbounded and others bounded rather than one retention
+  policy for everything it holds.
