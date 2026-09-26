@@ -164,7 +164,7 @@ Alice generates her identity on her phone, then later adds a laptop.
    `coordinate-mediation/3.0` for it. It *separately* generates its own
    independent Device DID and mediates that too, for device-to-device
    traffic. The phone's roster starts as just itself:
-   `[{ device_id: "phone", device_did: "did:peer:4...phone", trusted: true }]`.
+   `[{ device_id: "phone", device_did: "did:peer:4...phone", key_agreement_public: "z6LSp...", authentication_public: "z6Mkp...", trusted: true }]`.
 2. **New device prepares.** Before scanning anything, the laptop generates
    its *own* independent Device DID, and its *own* independent
    `keyAgreement` keypair — the one it'll use for the rest of its enrolled
@@ -190,7 +190,7 @@ Alice generates her identity on her phone, then later adds a laptop.
      "body": {
        "device_id": "laptop",
        "device_did": "did:peer:4...laptop",
-       "key_agreement_public": { "kty": "OKP", "crv": "X25519", "x": "..." }
+       "key_agreement_public": "z6LSb..."
      }
    }
    ```
@@ -217,7 +217,19 @@ Alice generates her identity on her phone, then later adds a laptop.
        "mediator_did": "did:peer:2...mediator",
        "from_prior": "eyJhbGciOiJFZERTQSIsImtpZCI6ImRpZDpwZWVyOjQuLi5pZGVudGl0eS12MSNrZXktMiJ9...",
        "roster": [
-         { "device_id": "phone", "device_did": "did:peer:4...phone", "trusted": true }
+         {
+           "device_id": "phone",
+           "device_did": "did:peer:4...phone",
+           "key_agreement_public": "z6LSp...",
+           "authentication_public": "z6Mkp...",
+           "trusted": true
+         },
+         {
+           "device_id": "laptop",
+           "device_did": "did:peer:4...laptop",
+           "key_agreement_public": "z6LSl...",
+           "trusted": false
+         }
        ],
        "rotates": false
      }
@@ -227,32 +239,36 @@ Alice generates her identity on her phone, then later adds a laptop.
    protocol — the single most sensitive thing an earlier draft of this
    protocol ever transmitted no longer needs to be transmitted at all.
 4. **New device registers itself.** Holding the new Identity DID now (its
-   own `keyAgreement` entry is in it), the laptop completes its own
-   `coordinate-mediation/3.0` for it — authenticated as the Identity DID via
-   its own `keyAgreement` key, exactly like every other device does (see
-   Connectivity) — and separately registers its own Device DID under its
-   own, already-established mediation relationship from step 2.
-5. **Roster fan-out.** The laptop sends every device in the roster it was
-   given (just the phone, here) a `device-announce`:
-   ```json
-   {
-     "id": "9d9a5f2a-3b7e-4b8e-9c9a-1f2b3c4d5e6f",
-     "type": "https://wyvrn.app/multi-device/1.0/device-announce",
-     "body": {
-       "device_id": "laptop",
-       "device_did": "did:peer:4...laptop",
-       "trusted": false,
-       "announced_at": 1735689600000
-     }
-   }
-   ```
-6. The phone adds the laptop to its own roster on receipt. Both devices now
-   independently know `[phone, laptop]`, and both can now independently
-   receive as the Identity DID — a contact's message, encrypted to every
-   listed `keyAgreement` entry, reaches whichever of them is online, live,
-   with no relay or handoff needed between them for ordinary delivery. The
-   phone also includes the `from_prior` it just signed on its next outgoing
-   message to each contact (or a dedicated one), per
+   own `keyAgreement` entry is in it, and it was already given
+   `mediator_did`), the laptop sends a bare `recipient-update` (`action:
+   "add"`) for it — no `mediate-request` needed, since the document's
+   endpoint was already the real one by the time it was minted (see Design
+   By Contract). It separately registers its own Device DID the normal way,
+   under its own, already-established mediation relationship from step 2.
+5. **The phone fans the rotation out to every *other* sibling it already
+   knows about** (there are none yet in this two-device example; with a
+   third device already enrolled, it would get this step too) — the same
+   `device-enroll-response`, but with
+   `rotates: true` and no `thid`, since it isn't a reply to anything from
+   that sibling. This is what actually propagates the new roster: not a
+   separate `device-announce` from the laptop, which would be redundant
+   here and, more fundamentally, *couldn't* carry the authority a real
+   rotation needs — only a trusted device's signed `from_prior` (which the
+   laptop, freshly enrolled and untrusted, has no way to produce) makes a
+   new Identity DID value legitimate to a sibling that doesn't already
+   know it's coming. `device-announce` still exists for a narrower case:
+   telling a specific sibling "I'm here" when it *missed* a fan-out it
+   should have already gotten (e.g. it was offline, and later catches up
+   via [`history-sync/1.0`](../../history-sync/1.0/readme.md) reconciling
+   the roster as an ordinary collection) — not the normal path.
+6. Every device that received the rotation (directly, as the reply to its
+   own request; or via a `rotates: true` fan-out) now has the same updated
+   roster and the same new Identity DID. Both the phone and the laptop can
+   now independently receive as it — a contact's message, encrypted to
+   every listed `keyAgreement` entry, reaches whichever of them is online,
+   live, with no relay or handoff needed between them for ordinary
+   delivery. The phone also includes the `from_prior` it just signed on its
+   next outgoing message to each contact (or a dedicated one), per
    [DIDComm Messaging v2.1](https://identity.foundation/didcomm-messaging/spec/v2.1/):
    keep including it until a reply addressed to the new DID confirms the
    contact has switched over.
@@ -461,7 +477,7 @@ freshly-generated Device DID, requesting to be enrolled.
 |---|---|---|
 | `device_id` | string | A human-meaningful local label for this device, same meaning as `device-announce`'s field of the same name. |
 | `device_did` | string | The requesting device's own independently-generated Device DID — not yet registered with the mediator; that happens after this exchange completes. |
-| `key_agreement_public` | object | The requesting device's own, independently-generated `keyAgreement` public key (JWK) — the one it will keep using for the rest of its enrolled life. Never a private key; the requesting device already holds the matching private half locally. |
+| `key_agreement_public` | string | The requesting device's own, independently-generated `keyAgreement` public key, multikey-encoded (the same encoding a `keyAgreement` entry's own `publicKeyMultibase` uses) — the one it will keep using for the rest of its enrolled life. Never a private key; the requesting device already holds the matching private half locally. |
 
 ### `device-enroll-response`
 
@@ -477,7 +493,7 @@ new Identity DID document, in which case there is no corresponding
 | `identity_did` | string | The new Identity DID this response is establishing (or rotating to). |
 | `mediator_did` | string | The mediator to register with — needed by a newly-enrolling device, which has no prior mediation relationship for the Identity DID yet. |
 | `from_prior` | string | A signed `from_prior` JWT (per [DIDComm Messaging v2.1](https://identity.foundation/didcomm-messaging/spec/v2.1/)) naming the immediately-prior Identity DID this one supersedes. Absent only for a founding device's very first document, which supersedes nothing. |
-| `roster` | array of object | The sender's current roster (after this change), `{ device_id, device_did, trusted }` per entry. |
+| `roster` | array of object | The sender's current roster (after this change), `{ device_id, device_did, key_agreement_public, authentication_public?, trusted }` per entry — every device's own *public* keys, never a private one, so the receiving device can itself mint a future rotation (see Key Rotation: any trusted device can do this, not just whichever one enrolled or revoked last) without a separate roster-fetch mechanism. |
 | `rotates` | boolean | `false`/absent for ordinary enrollment of the device this response is addressed to. `true` means this response is Key Rotation fan-out to an *already*-enrolled sibling — it keeps its existing `device_did` and its own `keyAgreement`/`authentication` keys (if still listed in `roster`), and only needs to re-`recipient-update` onto the new `identity_did`. |
 
 No field in this message is ever a private key. The single most sensitive
