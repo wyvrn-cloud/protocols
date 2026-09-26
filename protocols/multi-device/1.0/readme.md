@@ -417,10 +417,15 @@ the enrollment exchange rather than defining a new one:
 
 **Promotion and demotion** use the exact same mechanism, with no key ever
 changing hands: to be promoted, a device generates its own `authentication`
-keypair locally and sends only the *public* half to a trusted sibling over
-their own Device-DID-to-Device-DID channel; that trusted sibling performs
-steps 1-3 above, adding the new `authentication` entry. Demotion is the
-same, dropping only the `authentication` entry (the device's `keyAgreement`
+keypair locally and sends only the *public* half to a trusted sibling as a
+`device-promote-request` (see Message Reference); that trusted sibling
+performs steps 1-3 above, adding the new `authentication` entry — its
+rotating `device-enroll-response` fan-out is what actually confirms the
+promotion, including to the newly-promoted device itself, rather than a
+separate response to the request. Demotion needs no request at all: any
+trusted device can decide to demote another (or itself) unilaterally, the
+same way revocation needs none — it's initiated directly with steps 1-3,
+dropping only the target's `authentication` entry (its `keyAgreement`
 entry, and its content access, is untouched).
 
 This needs no new mediator capability beyond what enrollment already
@@ -523,12 +528,32 @@ longer be considered part of the identity. Expected to be followed shortly
 by a rotating `device-enroll-response` from the sender (see Key Rotation)
 — `device-revoke` itself only updates roster knowledge, it doesn't perform
 the rotation. Only meaningful coming from a trusted device — see Design By
-Contract.
+Contract. Never sent to the revoked device itself — telling it it's been
+cut off accomplishes nothing security-relevant (the rotation is what
+actually cuts it off), and a lost-or-compromised device is exactly the one
+this protocol has no reason to trust with advance notice.
 
 | Field | Type | Description |
 |---|---|---|
 | `device_did` | string | The `device_did` (from that device's own `device-announce`) being revoked. |
 | `reason` | string | One of `"lost"`, `"compromised"`, `"replaced"`. Informational only — every reason requires the same key rotation, since (see Security) the revoked device's own key is what needs to stop being listed, regardless of why. |
+
+### `device-promote-request`
+
+Sent by an already-enrolled, untrusted device to a trusted sibling it
+chooses, asking to be promoted. Carries only a public key: the requesting
+device generates its own `authentication` keypair locally first (the same
+way a founding device or a newly-enrolling one generates its `keyAgreement`
+keypair — see Key Rotation) and hands over only the public half, exactly
+like `device-enroll-request`'s own `key_agreement_public`. There is no
+corresponding `device-promote-response` — the trusted device's reply is the
+same rotating `device-enroll-response` every other roster change already
+uses (see Key Rotation), which reaches the newly-promoted device too and
+is what actually confirms the promotion to everyone at once.
+
+| Field | Type | Description |
+|---|---|---|
+| `authentication_public` | string | The requesting device's own, independently-generated `authentication` public key, multikey-encoded. Never a private key; the requesting device already holds the matching private half locally. |
 
 ## Implementations
 
