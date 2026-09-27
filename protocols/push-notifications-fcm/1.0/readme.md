@@ -112,8 +112,17 @@ rule above.
   (`registerForPushNotifications()`, `push-notifications` Cargo feature) for this --
   not an official Tauri plugin, evaluated and adopted as this plan's own explicitly
   flagged research spike. Requires a real Firebase project's `google-services.json`
-  placed in `gen/android/app/` at build time; see `wyvrn-chat`'s own README for the
-  exact steps, since this is a per-deployment secret/config file, never committed.
+  placed in `gen/android/app/` at build time; see `wyvrn-chat`'s own
+  `src-tauri/gen/android/app/README-firebase.md` for the exact steps, since this is a
+  per-deployment secret/config file, never committed.
+- **This community plugin replaces the official `tauri-plugin-notification` outright,
+  rather than running alongside it** -- confirmed the hard way, by a real
+  `tauri android build` failing: this fork hardcodes the same Android namespace
+  (`app.tauri.notification`) the official plugin uses, so Gradle's manifest merger
+  rejects a build with both as Cargo dependencies. It happens to also be a
+  superset-compatible replacement for the official plugin's local-notification API
+  (confirmed against its own published TypeScript types), so Part 4's desktop tray
+  notifications were ported onto this same plugin rather than living on two.
 - **Only Android is wired up in wyvrn-chat today.** iOS has no Tauri build at all yet
   (see the Tauri native-builds plan's Part 5) -- the APNs half of this protocol's
   "Firebase relays to APNs" property is real and already covered by the same mediator
