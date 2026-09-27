@@ -72,9 +72,10 @@ implementing it would move to the real `didcomm.org` PIURI.
 | Protocol | Version | Status | Used by |
 |---|---|---|---|
 | [`group-chat`](protocols/group-chat/1.0/readme.md) | 1.0 | Proposed | [`wyvrn-chat`](../wyvrn-chat) |
-| [`multi-device`](protocols/multi-device/1.0/readme.md) | 1.0 | Proposed | none yet — design proposal |
-| [`history-sync`](protocols/history-sync/1.0/readme.md) | 1.0 | Proposed | none yet — design proposal |
-| [`push-notifications`](protocols/push-notifications/1.0/readme.md) | 1.0 | Proposed | none yet — design proposal |
+| [`multi-device`](protocols/multi-device/1.0/readme.md) | 1.0 | Implemented | [`wyvrn-chat`](../wyvrn-chat) |
+| [`history-sync`](protocols/history-sync/1.0/readme.md) | 1.0 | Implemented | [`wyvrn-chat`](../wyvrn-chat) |
+| [`push-notifications`](protocols/push-notifications/1.0/readme.md) | 1.0 | Proposed | none yet — design proposal (browser PWA build) |
+| [`push-notifications-fcm`](protocols/push-notifications-fcm/1.0/readme.md) | 1.0 | Adopted (not wyvrn-authored -- see its own readme) | [`wyvrn-chat`](../wyvrn-chat) (Android), [`wyvrn-mediator`](../wyvrn-mediator) |
 | [`documentation`](protocols/documentation/1.0/readme.md) | 1.0 | Proposed | [`documentation-server`](https://github.com/wyvrn-cloud/documentation-server) (registry), [`mcp`](https://github.com/wyvrn-cloud/mcp) (requester) |
 
 `multi-device` and `history-sync` are companion protocols for the same
