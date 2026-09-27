@@ -231,7 +231,8 @@ Alice generates her identity on her phone, then later adds a laptop.
            "trusted": false
          }
        ],
-       "rotates": false
+       "rotates": false,
+       "rotation_seq": 1
      }
    }
    ```
@@ -500,6 +501,7 @@ new Identity DID document, in which case there is no corresponding
 | `from_prior` | string | A signed `from_prior` JWT (per [DIDComm Messaging v2.1](https://identity.foundation/didcomm-messaging/spec/v2.1/)) naming the immediately-prior Identity DID this one supersedes. Absent only for a founding device's very first document, which supersedes nothing. |
 | `roster` | array of object | The sender's current roster (after this change), `{ device_id, device_did, key_agreement_public, authentication_public?, trusted }` per entry — every device's own *public* keys, never a private one, so the receiving device can itself mint a future rotation (see Key Rotation: any trusted device can do this, not just whichever one enrolled or revoked last) without a separate roster-fetch mechanism. |
 | `rotates` | boolean | `false`/absent for ordinary enrollment of the device this response is addressed to. `true` means this response is Key Rotation fan-out to an *already*-enrolled sibling — it keeps its existing `device_did` and its own `keyAgreement`/`authentication` keys (if still listed in `roster`), and only needs to re-`recipient-update` onto the new `identity_did`. |
+| `rotation_seq` | integer | How many roster-changing rotations the sender's identity has gone through, counting this one — `1` for the very first (an identity's founding document has no rotation at all, so there's nothing to number before it). A receiving device that already has an equal-or-higher `rotation_seq` recorded discards this message's `roster` and `identity_did` entirely rather than applying them. This exists because Identity DID *values* have no inherent ordering (each is an unpredictable hash of its own document), so without a monotonic counter, several rotations fanning out in quick succession — each an independent per-sibling send, not a single broadcast — can arrive out of order and let an older one silently resurrect a device state a newer one already superseded (e.g. a stale enrollment notice re-adding a device a subsequent revoke had just dropped). Absent only from messages predating this field; a receiver should treat that as "always apply" for backward compatibility, not as automatically stale. |
 
 No field in this message is ever a private key. The single most sensitive
 value an earlier draft of this protocol transmitted no longer needs to be

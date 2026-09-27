@@ -290,6 +290,20 @@ holds, and whether it has more beyond that:
   straight from `sync-summary-response` to `chunk-members-request` without
   ever needing a real manifest exchange, exactly as shown for `contacts`
   in the walkthrough above.
+- **A single-chunk collection's `sync-summary` comparison must include
+  `content_hash`, not count alone.** `count` matching a chunkable
+  (`messages:*`) collection's does prove agreement, because those are only
+  ever appended to — nothing already held ever changes underneath a
+  device. `contacts`, `groups`, `devices`, and `ownProfile` are different:
+  an existing item is edited in place (a contact's own fields, an
+  own-profile display name, a device's trust flag), so its total count can
+  stay identical across an edit the two sides genuinely need to
+  reconcile. An earlier version of this spec (and its first
+  implementation) compared `count` alone for every collection type,
+  which meant an in-place edit to any of these four could never
+  propagate via history-sync at all unless it happened to also add or
+  remove an item — found via a live end-to-end run where an own-profile
+  edit made on one device never reached a sibling's copy.
 - **No ordering or delivery guarantee beyond ordinary pairwise DIDComm.**
   Two reconciliation passes running concurrently between the same pair of
   devices (e.g. both waking up near-simultaneously and reconciling with
@@ -332,9 +346,10 @@ sync, before doing any more expensive comparison.
 | Field | Type | Description |
 |---|---|---|
 | `collections` | array of object | The sender's own current state per collection it wants checked. |
-| `collections[].collection_id` | string | `"contacts"`, `"groups"`, `"devices"`, or `"messages:<conversation_id>"`. |
+| `collections[].collection_id` | string | `"contacts"`, `"groups"`, `"devices"`, `"ownProfile"`, or `"messages:<conversation_id>"`. |
 | `collections[].count` | integer | Total items the sender currently holds in this collection. |
 | `collections[].oldest_id` / `collections[].newest_id` | string | Present for chunkable collections (typically `messages:*`); the sender's own oldest/newest held item id, reflecting its retention window. |
+| `collections[].content_hash` | string | Present for a non-chunkable collection (`contacts`/`groups`/`devices`/`ownProfile`) instead of `oldest_id`/`newest_id`: a hash over every item's own content hash (order-independent — the same combining hash a chunk's own `digest` uses, see `chunk-manifest-response` below), covering the collection's *content*, not just its size. Necessary because these collections are edited in place rather than only ever appended to: a contact's own fields, an own-profile display name, or a device's trust flag can all change without the collection's total item count changing at all, so `count` alone can't prove two devices agree on one of these. |
 
 ### `sync-summary-response`
 
@@ -342,8 +357,8 @@ sync, before doing any more expensive comparison.
 |---|---|---|
 | `collections` | array of object | One entry per collection from the request that the responder has an opinion on (an out-of-window collection may be omitted entirely). |
 | `collections[].collection_id` | string | Echoes the request. |
-| `collections[].in_sync` | boolean | `true` if the responder's own count/cursors already match the request. |
-| `collections[].count` / `oldest_id` / `newest_id` | — | The responder's own current values, same shape as the request. |
+| `collections[].in_sync` | boolean | `true` if the responder's own count matches the request *and* (for a non-chunkable collection) its own `content_hash` matches too, or (for a chunkable collection) its own cursors match too. |
+| `collections[].count` / `oldest_id` / `newest_id` / `content_hash` | — | The responder's own current values, same shape as the request. |
 
 ### `chunk-manifest-request`
 
