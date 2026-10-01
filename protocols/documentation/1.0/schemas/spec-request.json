@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "documentation/1.0/spec-request",
+  "description": "Requests the DIDComm Messaging specification's table of contents, or one section of it.",
+  "type": "object",
+  "required": [
+    "id",
+    "type"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Message ID, unique to the sender."
+    },
+    "type": {
+      "const": "https://wyvrn.app/documentation/1.0/spec-request"
+    },
+    "from": {
+      "type": "string",
+      "pattern": "^did:[a-z0-9]+:[^#]+$",
+      "description": "Sender DID. REQUIRED when the message is authcrypted."
+    },
+    "to": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^did:[a-z0-9]+:[^#]+$"
+      },
+      "description": "Intended recipient DIDs."
+    },
+    "thid": {
+      "type": "string",
+      "description": "Thread id; the id of the message that started the thread."
+    },
+    "pthid": {
+      "type": "string",
+      "description": "Parent thread id."
+    },
+    "created_time": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "UTC epoch seconds."
+    },
+    "expires_time": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "UTC epoch seconds."
+    },
+    "return_route": {
+      "enum": [
+        "none",
+        "all",
+        "thread"
+      ],
+      "description": "return_route extension; set to all to receive the reply on the same connection."
+    },
+    "body": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "type": "string",
+          "description": "e.g. 2.0, 2.1 or editors-draft. Omitted = latest published version.",
+          "examples": [
+            "2.0",
+            "2.1",
+            "editors-draft"
+          ]
+        },
+        "section": {
+          "type": "string",
+          "description": "Section id. Omitted = table of contents."
+        }
+      }
+    }
+  }
+}
