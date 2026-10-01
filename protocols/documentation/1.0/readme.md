@@ -111,9 +111,9 @@ An AI agent has learned via Discover Features that Bob supports
          "revision": "4f1c2b9"
        },
        "available_sections": [
-         {"id": "roles", "title": "Roles"},
-         {"id": "basic-walkthrough", "title": "Basic Walkthrough"},
-         {"id": "message-reference", "title": "Message Reference"}
+         {"id": "roles", "title": "Roles", "level": 2},
+         {"id": "basic-walkthrough", "title": "Basic Walkthrough", "level": 2},
+         {"id": "message-reference", "title": "Message Reference", "level": 2}
        ],
        "sections": [
          {
@@ -223,8 +223,9 @@ An AI agent has learned via Discover Features that Bob supports
   characters, and a `match` of just `*` matches everything. `text` is a
   case-insensitive substring match against title, summary and tags. All filters given
   must match.
-- **Section ids** are the section heading in lower kebab-case (`Basic Walkthrough` →
-  `basic-walkthrough`). A heading that repeats gets `-2`, `-3`, … in document order.
+- **Section ids** are the section heading in lower kebab-case, keeping only ASCII
+  letters and digits (`Basic Walkthrough` → `basic-walkthrough`, `` `query` Message
+  Type `` → `query-message-type`). A section includes its subsections. A heading that repeats gets `-2`, `-3`, … in document order.
   Every `response` lists `available_sections`, so a requester can always discover valid
   ids. The same rule applies to `spec-response` section ids.
 - **Schemas** are [JSON Schema 2020-12](https://json-schema.org/draft/2020-12) documents
@@ -262,8 +263,9 @@ with `pthid` set to the request's thread id.
   documentation, so a requester can cache it or compare it with the upstream source.
 - **Privacy.** A registry learns which protocols a requester is interested in, which
   can hint at what the requester is about to do and with whom. A requester that cares
-  can send anoncrypted requests with `return_route: all`. The reply then comes back on
-  the same connection without the requester revealing its DID.
+  SHOULD query from a fresh DID used for nothing else (a peer DID costs nothing), as the
+  DIDComm spec recommends for anonymous senders. Anoncrypt doesn't help here: the
+  registry needs a key of the requester's to encrypt its reply to.
 - **Denial of service.** Full protocol definitions can be tens of kilobytes. Requesters
   SHOULD use `sections` to ask for only what they need. Registries MAY limit `query`
   page size and SHOULD cap `limit`.
@@ -321,7 +323,7 @@ request's id.
 | `authors` | object[] | From frontmatter (`name`, optional `email`). |
 | `roles` | string[] | Role names, when the registry can determine them. |
 | `source` | object | `name` (REQUIRED), `path`, `revision`, `url`: where the definition came from. |
-| `available_sections` | object[] | REQUIRED. Every section's `id` and `title`, in document order. |
+| `available_sections` | object[] | REQUIRED. Every section's `id`, `title` and heading `level` (1-6), in document order. |
 | `sections` | object[] | The requested sections: `id`, `title`, `markdown`. |
 | `messages` | object[] | Present unless `messages: false` was requested. Each has `type` (REQUIRED), `examples` (array of objects), and `schema` (a JSON Schema, when known). |
 
