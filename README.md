@@ -53,7 +53,7 @@ that type in the protocol's `readme.md` validates against it. CI runs it on ever
 request.
 
 Documentation registries implementing
-[`documentation/1.0`](protocols/documentation/1.0/readme.md) serve these schemas with
+[`documentation/1.1`](protocols/documentation/1.1/readme.md) serve these schemas with
 the protocol's definition. didcomm.org has no equivalent convention yet; this layout is
 what we intend to propose there.
 
@@ -75,7 +75,7 @@ implementing it would move to the real `didcomm.org` PIURI.
 | [`multi-device`](protocols/multi-device/1.0/readme.md) | 1.0 | Proposed | none yet — design proposal |
 | [`history-sync`](protocols/history-sync/1.0/readme.md) | 1.0 | Proposed | none yet — design proposal |
 | [`push-notifications`](protocols/push-notifications/1.0/readme.md) | 1.0 | Proposed | none yet — design proposal |
-| [`documentation`](protocols/documentation/1.0/readme.md) | 1.0 | Proposed | [`documentation-server`](https://github.com/wyvrn-cloud/documentation-server) (registry), [`mcp`](https://github.com/wyvrn-cloud/mcp) (requester) |
+| [`documentation`](protocols/documentation/1.1/readme.md) | 1.1 ([1.0](protocols/documentation/1.0/readme.md)) | Proposed | [`documentation-server`](https://github.com/wyvrn-cloud/documentation-server) (registry), [`mcp`](https://github.com/wyvrn-cloud/mcp) (requester) |
 
 `multi-device` and `history-sync` are companion protocols for the same
 problem (one person, several devices, no central account server) and are
