@@ -31,7 +31,26 @@ protocols/
   <protocol-name>/       lower-kebab-case slug
     <version>/            <major>.<minor>, no patch component
       readme.md            frontmatter + body, same schema as didcomm.org's own
+      schemas/             optional: one JSON Schema per message type
+        <message-name>.json
 ```
+
+### Schemas
+
+A protocol may ship machine-readable schemas next to its `readme.md`, one file per
+message type, named after the last segment of the message type URI (so
+`https://wyvrn.app/documentation/1.0/request` → `schemas/request.json`). Each one is a
+[JSON Schema 2020-12](https://json-schema.org/draft/2020-12) document that validates the
+**complete DIDComm v2 plaintext message** (headers and `body`, with `type` pinned by
+`const`), not just the body, so headers a message needs (`thid` on a reply, `from` on an
+invitation, `created_time` on a basicmessage) are checked too. Schemas should not set
+`additionalProperties: false`: DIDComm requires recipients to ignore fields they don't
+understand.
+
+Documentation registries implementing
+[`documentation/1.0`](protocols/documentation/1.0/readme.md) serve these schemas with
+the protocol's definition. didcomm.org has no equivalent convention yet; this layout is
+what we intend to propose there.
 
 ## PIURI namespace
 
@@ -51,6 +70,7 @@ implementing it would move to the real `didcomm.org` PIURI.
 | [`multi-device`](protocols/multi-device/1.0/readme.md) | 1.0 | Proposed | none yet — design proposal |
 | [`history-sync`](protocols/history-sync/1.0/readme.md) | 1.0 | Proposed | none yet — design proposal |
 | [`push-notifications`](protocols/push-notifications/1.0/readme.md) | 1.0 | Proposed | none yet — design proposal |
+| [`documentation`](protocols/documentation/1.0/readme.md) | 1.0 | Proposed | [`documentation-server`](https://github.com/wyvrn-cloud/documentation-server) (registry), [`mcp`](https://github.com/wyvrn-cloud/mcp) (requester) |
 
 `multi-device` and `history-sync` are companion protocols for the same
 problem (one person, several devices, no central account server) and are
