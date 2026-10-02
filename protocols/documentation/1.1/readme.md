@@ -42,6 +42,10 @@ All additive; a 1.1 registry SHOULD keep answering 1.0 requests as 1.0 did.
   accept them.
 - **Documents.** `spec-request` takes a `document` (default: the specification), and
   the table of contents lists every document the registry serves.
+- **Attachment formats.** For a protocol whose messages carry attachments in registered
+  formats (issue-credential and present-proof carry credentials, requests and proofs
+  this way), a response can list those formats in `attachment_formats`, with a JSON
+  Schema for each attachment's content in each message that carries it.
 
 ## Motivation
 
@@ -419,6 +423,41 @@ request's id.
 | `available_sections` | object[] | REQUIRED. Every section's `id`, `title` and heading `level` (1-6), in document order. |
 | `sections` | object[] | The requested sections: `id`, `title`, `markdown`. |
 | `messages` | object[] | Present unless `messages: false` was requested. Each has `type` (REQUIRED), `didcomm_versions`, `examples` (array of objects), `schemas` (every known JSON Schema, each with its `didcomm_versions`), and `schema` (the newest of those). |
+| `attachment_formats` | object[] | OPTIONAL; only with `messages`. The attachment formats the registry knows this protocol's messages to carry. Each has `format` (REQUIRED: the identifier a message names it by, in `formats[].format` for DIDComm v1 or an attachment's `format` for v2, e.g. `anoncreds/credential-offer@v1.0`), `title`, `documentation` (`document` and `section`, to read with `spec-request`), and `uses` (REQUIRED): per message type that carries it, `message` (REQUIRED, the type URI), `attachment` (DIDComm v1: the decorator it goes in, e.g. `offers~attach`), and `schema`: a JSON Schema 2020-12 for the attachment's content -- the JSON in `data.json`, or decoded from `data.base64`. One format can have different content in different messages. |
+
+A response for issue-credential 2.0 (DIDComm v1) listing one of its attachment formats
+(sections and most messages left out):
+
+```json
+{
+  "type": "https://wyvrn.app/documentation/1.1/response",
+  "id": "5c0d1e8a-2b9f-4c51-9a07-3e4f1b2c6d80",
+  "thid": "0f8e7d6c-5b4a-4392-8170-6e5d4c3b2a19",
+  "body": {
+    "piuri": "https://didcomm.org/issue-credential/2.0",
+    "title": "Issue Credential Protocol 2.0",
+    "status": "Adopted",
+    "didcomm_versions": ["^1.0"],
+    "available_sections": [{"id": "summary", "title": "Summary", "level": 2}],
+    "sections": [],
+    "messages": [{"type": "https://didcomm.org/issue-credential/2.0/offer-credential", "didcomm_versions": ["^1.0"], "examples": []}],
+    "attachment_formats": [{
+      "format": "anoncreds/credential-offer@v1.0",
+      "title": "AnonCreds credential offer",
+      "documentation": {"document": "aries/attachment-formats", "section": "rfc0771"},
+      "uses": [{
+        "message": "https://didcomm.org/issue-credential/2.0/offer-credential",
+        "attachment": "offers~attach",
+        "schema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "required": ["schema_id", "cred_def_id", "nonce", "key_correctness_proof"]
+        }
+      }]
+    }]
+  }
+}
+```
 
 ### spec-request
 
