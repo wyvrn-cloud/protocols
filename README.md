@@ -47,6 +47,11 @@ invitation, `created_time` on a basicmessage) are checked too. Schemas should no
 `additionalProperties: false`: DIDComm requires recipients to ignore fields they don't
 understand.
 
+`scripts/check_schemas.py` (`pip install jsonschema json5`) checks every shipped schema
+is valid JSON Schema 2020-12 that names its message type, and that every example of
+that type in the protocol's `readme.md` validates against it. CI runs it on every pull
+request.
+
 Documentation registries implementing
 [`documentation/1.0`](protocols/documentation/1.0/readme.md) serve these schemas with
 the protocol's definition. didcomm.org has no equivalent convention yet; this layout is
