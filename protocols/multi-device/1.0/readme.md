@@ -419,15 +419,25 @@ the enrollment exchange rather than defining a new one:
 **Promotion and demotion** use the exact same mechanism, with no key ever
 changing hands: to be promoted, a device generates its own `authentication`
 keypair locally and sends only the *public* half to a trusted sibling as a
-`device-promote-request` (see Message Reference); that trusted sibling
-performs steps 1-3 above, adding the new `authentication` entry — its
-rotating `device-enroll-response` fan-out is what actually confirms the
-promotion, including to the newly-promoted device itself, rather than a
-separate response to the request. Demotion needs no request at all: any
-trusted device can decide to demote another (or itself) unilaterally, the
-same way revocation needs none — it's initiated directly with steps 1-3,
-dropping only the target's `authentication` entry (its `keyAgreement`
-entry, and its content access, is untouched).
+`device-promote-request` (see Message Reference). Unlike every other
+roster change, this one does not take effect automatically on receipt —
+granting trust is a one-way door (a trusted device can single-handedly
+enroll, revoke, or promote/demote anyone), so the receiving trusted
+device's own user explicitly accepts or denies it first. A
+`device-promote-response` (see Message Reference) tells the requester the
+outcome either way: on acceptance, the trusted sibling performs steps 1-3
+above, adding the new `authentication` entry — its rotating
+`device-enroll-response` fan-out is what actually confirms the promotion to
+every device, including the newly-promoted one, with the direct
+`device-promote-response` only letting the requester's own UI react
+immediately rather than waiting on that fan-out to arrive; on denial,
+nothing is minted or rotated at all, and the requester drops the
+`authentication` keypair it generated, since it was never going to be
+listed anywhere. Demotion needs no request at all: any trusted device can
+decide to demote another (or itself) unilaterally, the same way revocation
+needs none — it's initiated directly with steps 1-3, dropping only the
+target's `authentication` entry (its `keyAgreement` entry, and its content
+access, is untouched).
 
 This needs no new mediator capability beyond what enrollment already
 needs — registering an additional recipient DID under an existing
@@ -547,15 +557,31 @@ chooses, asking to be promoted. Carries only a public key: the requesting
 device generates its own `authentication` keypair locally first (the same
 way a founding device or a newly-enrolling one generates its `keyAgreement`
 keypair — see Key Rotation) and hands over only the public half, exactly
-like `device-enroll-request`'s own `key_agreement_public`. There is no
-corresponding `device-promote-response` — the trusted device's reply is the
-same rotating `device-enroll-response` every other roster change already
-uses (see Key Rotation), which reaches the newly-promoted device too and
-is what actually confirms the promotion to everyone at once.
+like `device-enroll-request`'s own `key_agreement_public`. Unlike
+`device-enroll-request`, this does not take effect on receipt — see
+`device-promote-response` below and Key Rotation's own note on why
+promotion specifically gets a human accept/deny step the other roster
+changes don't.
 
 | Field | Type | Description |
 |---|---|---|
 | `authentication_public` | string | The requesting device's own, independently-generated `authentication` public key, multikey-encoded. Never a private key; the requesting device already holds the matching private half locally. |
+
+### `device-promote-response`
+
+Sent by the trusted device a `device-promote-request` was addressed to,
+once its own user has explicitly accepted or denied it. On acceptance,
+sent alongside (not instead of) the usual rotating `device-enroll-response`
+fan-out (see Key Rotation) — that fan-out is still what actually confirms
+the promotion to every device, this message just lets the requester's own
+UI react the moment its own request is resolved rather than waiting on
+that fan-out to arrive. On denial, nothing else follows: no document is
+minted, and the requester is expected to drop the `authentication` keypair
+it generated, since it was never going to be listed anywhere.
+
+| Field | Type | Description |
+|---|---|---|
+| `accepted` | boolean | Whether the promotion was granted. |
 
 ## Implementations
 
