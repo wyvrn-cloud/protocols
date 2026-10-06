@@ -149,9 +149,12 @@ through a separate per-device "control" identity.
 | Event | `unenrolled` | `enrolled` | `trusted` |
 |---|---|---|---|
 | Receive a `device-enroll-response` (`rotates: false`) | → `enrolled`, adopts the new Identity DID, registers its own `keyAgreement` key with the mediator, roster seeded from what it carried | n/a (already enrolled) | n/a |
-| Receive a `device-enroll-response` (`rotates: true`) | n/a (not addressed to an unenrolled device) | adopts the new Identity DID document, re-`recipient-update`s (add new, remove old) | same, and re-evaluates its own trust (a rotation may promote or demote it) |
+| Receive a `device-enroll-response` (`rotates: true`), signed by the Identity DID it is on and next in order | n/a (not addressed to an unenrolled device) | adopts the new Identity DID document and its roster (removing any device no longer listed), re-`recipient-update`s (add new, remove old) | same, and re-evaluates its own trust (a rotation may promote or demote it) |
+| Receive one that is properly signed but ahead of the next in order | n/a | holds it, sends a `device-rotation-request` | same |
+| Receive a `device-enroll-request` answering a live invitation it issued | n/a | no-op (cannot mint a rotation) | holds it for its user to accept (mints and sends the rotation) or deny (`device-enroll-deny`) |
+| Receive a `device-rotation-request` | n/a | no-op (cannot sign a roster change) | re-sends, freshly signed, each later roster change it still has and was trusted for |
 | Receive `device-announce` | no-op (not enrolled, nothing to update) | stays in state, roster gains an entry | stays in state, roster gains an entry |
-| Receive `device-revoke` for another device | no-op | stays in state, roster loses an entry, expects a rotating `device-enroll-response` to follow shortly | same, and may itself perform the rotation if no other trusted device does first |
+| Receive `device-revoke` for another device, from a trusted device | no-op | stays in state, roster loses an entry, expects a rotating `device-enroll-response` to follow shortly | same, and may itself perform the rotation if no other trusted device does first |
 | Receive `device-revoke` for *this device's own* Device DID | no-op | this device should stop presenting itself as enrolled — see Security | same |
 
 ## Basic Walkthrough
@@ -178,15 +181,18 @@ Alice generates her identity on her phone, then later adds a laptop.
    [`out-of-band/2.0`](https://didcomm.org/out-of-band/2.0) invitation
    (`goal_code: "wyvrn.multi-device.enroll"`, `from` the phone's own
    Device DID), the standard DIDComm mechanism for "here's how to start
-   talking to me," carrying no key material itself — its only job is
-   getting the laptop a route to the phone. The laptop scans it and sends
-   a `device-enroll-request`, mediated and encrypted like any ordinary
-   DIDComm v2 message, from its new Device DID (from step 2) to the
-   phone's:
+   talking to me," carrying no key material itself. Its `id` is random,
+   it carries an `expires_time` a few minutes out, and the phone remembers
+   having issued it: it is what authorizes whoever answers it, once. The
+   laptop scans it and sends a `device-enroll-request`, mediated and
+   sender-authenticated like any ordinary DIDComm v2 message, from its new
+   Device DID (from step 2) to the phone's, quoting the invitation's `id`
+   as its `pthid`:
    ```json
    {
      "id": "b2c3d4e5-6f7a-8b9c-0d1e-2f3a4b5c6d7e",
      "type": "https://wyvrn.app/multi-device/1.0/device-enroll-request",
+     "pthid": "9f8e7d6c-5b4a-3c2d-1e0f-a9b8c7d6e5f4",
      "body": {
        "device_id": "laptop",
        "device_did": "did:peer:4...laptop",
@@ -194,19 +200,28 @@ Alice generates her identity on her phone, then later adds a laptop.
      }
    }
    ```
-   Physical possession of the displayed QR code is the entire trust basis
-   here — the same assumption Signal's and WhatsApp's device-linking flows
-   make — so the phone can reply without any further out-of-band
-   confirmation (an implementation may still choose to show a confirmation
-   prompt on the phone before replying, but this protocol doesn't require
-   one). Only a **trusted** device can complete this exchange, since doing
-   so mints a new Identity DID document and signs a `from_prior` — an
-   enroll request that reaches an enrolled-but-untrusted sibling should be
-   forwarded to (or re-requested against) a trusted one instead. The phone
-   mints a new Identity DID document — every currently-listed
-   `keyAgreement` entry plus the laptop's new public one, `authentication`
-   entries unchanged — and replies with a `device-enroll-response`,
-   encrypted specifically to the laptop's new Device DID:
+   Possession of the displayed invitation is what gets a request
+   considered — the same starting point Signal's and WhatsApp's
+   device-linking flows have — but it is not the whole trust basis. The
+   phone checks that the request answers an invitation it issued, that
+   hasn't expired and hasn't been answered already, and then **shows the
+   request to its own user** — "laptop wants to join this identity" —
+   who accepts or denies it. Nothing is minted, and no reply is sent,
+   until they do. The invitation is displayed where others may see or
+   photograph it and carries the phone's Device DID in the clear, so
+   neither knowing that DID nor having seen the code can be allowed to
+   enroll a device unattended. A denied request gets a
+   `device-enroll-deny`, so the laptop stops waiting. Only a **trusted**
+   device can complete this exchange, since doing so mints a new Identity
+   DID document and signs a `from_prior` — an enroll request that reaches
+   an enrolled-but-untrusted sibling should be re-requested against a
+   trusted one instead. Once accepted, the phone mints a new Identity DID
+   document — every currently-listed `keyAgreement` entry plus the
+   laptop's new public one, `authentication` entries unchanged — and
+   replies with a `device-enroll-response`, sender-authenticated from its
+   own Device DID and encrypted specifically to the laptop's new one (the
+   laptop accepts this reply only from the Device DID the invitation
+   named):
    ```json
    {
      "id": "c3d4e5f6-7a8b-9c0d-1e2f-3a4b5c6d7e8f",
@@ -249,9 +264,16 @@ Alice generates her identity on her phone, then later adds a laptop.
 5. **The phone fans the rotation out to every *other* sibling it already
    knows about** (there are none yet in this two-device example; with a
    third device already enrolled, it would get this step too) — the same
-   `device-enroll-response`, but with
-   `rotates: true` and no `thid`, since it isn't a reply to anything from
-   that sibling. This is what actually propagates the new roster: not a
+   `device-enroll-response` body, with `rotates: true` and no `thid`
+   (it isn't a reply to anything from that sibling), but sent as a
+   **signed** message: `anoncrypt(sign(plaintext))` per DIDComm Messaging's
+   Message Signing, whose `from` is the Identity DID being rotated *from*
+   and whose signature is by the phone's `authentication` key in that
+   document. That is what lets a sibling act on it: the signature covers
+   the whole message — the new document, the sequence number, every
+   roster entry — and proves a trusted device of the identity the sibling
+   is already on authorized it. Which device relayed it proves nothing,
+   and is not asked. This is what actually propagates the new roster: not a
    separate `device-announce` from the laptop, which would be redundant
    here and, more fundamentally, *couldn't* carry the authority a real
    rotation needs — only a trusted device's signed `from_prior` (which the
@@ -419,15 +441,25 @@ the enrollment exchange rather than defining a new one:
 **Promotion and demotion** use the exact same mechanism, with no key ever
 changing hands: to be promoted, a device generates its own `authentication`
 keypair locally and sends only the *public* half to a trusted sibling as a
-`device-promote-request` (see Message Reference); that trusted sibling
-performs steps 1-3 above, adding the new `authentication` entry — its
-rotating `device-enroll-response` fan-out is what actually confirms the
-promotion, including to the newly-promoted device itself, rather than a
-separate response to the request. Demotion needs no request at all: any
-trusted device can decide to demote another (or itself) unilaterally, the
-same way revocation needs none — it's initiated directly with steps 1-3,
-dropping only the target's `authentication` entry (its `keyAgreement`
-entry, and its content access, is untouched).
+`device-promote-request` (see Message Reference). Unlike every other
+roster change, this one does not take effect automatically on receipt —
+granting trust is a one-way door (a trusted device can single-handedly
+enroll, revoke, or promote/demote anyone), so the receiving trusted
+device's own user explicitly accepts or denies it first. A
+`device-promote-response` (see Message Reference) tells the requester the
+outcome either way: on acceptance, the trusted sibling performs steps 1-3
+above, adding the new `authentication` entry — its rotating
+`device-enroll-response` fan-out is what actually confirms the promotion to
+every device, including the newly-promoted one, with the direct
+`device-promote-response` only letting the requester's own UI react
+immediately rather than waiting on that fan-out to arrive; on denial,
+nothing is minted or rotated at all, and the requester drops the
+`authentication` keypair it generated, since it was never going to be
+listed anywhere. Demotion needs no request at all: any trusted device can
+decide to demote another (or itself) unilaterally, the same way revocation
+needs none — it's initiated directly with steps 1-3, dropping only the
+target's `authentication` entry (its `keyAgreement` entry, and its content
+access, is untouched).
 
 This needs no new mediator capability beyond what enrollment already
 needs — registering an additional recipient DID under an existing
@@ -464,6 +496,69 @@ slow rotation loses its entire point.
   device, or revoke anyone — it has no `authentication` key to sign with.
   This is why promotion is a deliberate, explicit step rather than
   something every enrolled device gets by default.
+- **A Device DID is not a secret, so nothing may rest on knowing one.**
+  It is in every enrollment invitation, in the clear; every device ever
+  enrolled knows every sibling's, including devices since revoked; the
+  mediator holds it. A receiving device therefore decides who it is
+  hearing from only by what vouches for a message, and what must vouch
+  depends on the message:
+  - A message nothing vouches for has no sender. DIDComm requires the
+    plaintext `from` to match the encryption layer's `skid`
+    ([Message Layer Addressing Consistency](https://identity.foundation/didcomm-messaging/spec/v2.1/#message-layer-addressing-consistency)),
+    but an anonymously encrypted message has no `skid` to match, so its
+    `from` is whatever its sender wrote. A receiver MUST treat such a
+    message as having no `from` (and no `from_prior`) and MUST NOT act on
+    it under this protocol.
+  - A **roster change** (`device-enroll-response` with `rotates: true`)
+    MUST be a signed message whose signer is an `authentication` key of
+    the Identity DID the receiver is currently on. Sender authentication
+    alone MUST NOT be accepted for it: that would show which device sent
+    it, not that a trusted device authorized it.
+  - **Every other message** MUST be sender-authenticated by a Device DID
+    that is in the receiver's roster and has not been revoked. A
+    signature MUST NOT be accepted in its place. The one message exempt
+    from "in the roster" is `device-enroll-request`, which by nature
+    comes from a device not yet enrolled, and is authorized by the
+    invitation it answers instead.
+
+  The same rule governs every protocol that runs over the Device DID
+  channel, [`history-sync/1.0`](../../history-sync/1.0/readme.md)
+  included.
+- **A roster change is applied only in order, and only from the document
+  the receiver is on.** Each one is numbered (`rotation_seq`) and signed
+  as the Identity DID it rotates from, so a device on change *n* can act
+  on change *n+1* and on nothing else. One that arrives ahead of the
+  change it builds on MUST be held, not applied and not discarded, until
+  the changes before it have been; the receiver asks for those with a
+  `device-rotation-request`. A change signed by any other document is
+  not an authority to this device no matter how it is numbered, which is
+  what stops a validly signed message from an unrelated DID being taken
+  for one of this identity's.
+- **A verified roster change is the roster.** It lists every enrolled
+  device, so a device it leaves out has been revoked and MUST be removed,
+  whether or not a `device-revoke` ever arrived. A revoked device MUST
+  NOT be re-added by anything other than a later verified roster change
+  that lists it — not by its own `device-announce` (it is never told it
+  was revoked, and carries on announcing itself), and not by a sibling's
+  stale copy of the roster arriving through `history-sync/1.0`. Nothing a
+  revoked device sends over the Device DID channel is acted on or
+  answered.
+- **How far behind a device may fall is bounded, deliberately.** Catching
+  up means being sent each missed change, signed by a device that was
+  trusted when it was made. Devices keep only their most recent changes
+  to send again (an implementation choice; `wyvrn-chat` keeps 16), so
+  that neither that log nor the chain a lagging device must verify grows
+  with every device an identity has ever added or removed. A device
+  further behind than its siblings' logs reach cannot be caught up and
+  has to be enrolled afresh.
+- **An invitation admits one device, once, briefly, and only with a
+  person's say-so.** See Basic Walkthrough step 3. An implementation MUST
+  NOT enroll a device on receipt of a `device-enroll-request` alone.
+- **A device may only ask to have its own key listed.** A
+  `device-promote-request` carries proof that the requester holds the
+  private half of the `authentication` key it names; without it, an
+  enrolled device could have a key belonging to someone else listed as a
+  trusted one.
 - **Losing the last *trusted* device is unrecoverable via this protocol
   alone, even if untrusted devices survive** — none of them can sign a
   rotation. This is different from, and narrower than, losing the last
@@ -477,22 +572,44 @@ slow rotation loses its entire point.
 Sent by an unenrolled device to an already-enrolled, trusted one, over the
 connection established by scanning that device's `out-of-band/2.0`
 invitation (see Basic Walkthrough) — from the unenrolled device's own
-freshly-generated Device DID, requesting to be enrolled.
+freshly-generated Device DID, requesting to be enrolled. Sender-authenticated.
+Does not take effect on receipt: the receiving device holds it for its
+own user to accept or deny.
+
+The message's `pthid` header MUST be the `id` of the invitation being
+answered (out-of-band/2.0's own correlation rule). The receiver MUST
+ignore a request whose `pthid` is absent, names no invitation it issued,
+names one past its `expires_time`, or names one a request has already
+been received for.
 
 | Field | Type | Description |
 |---|---|---|
-| `device_id` | string | A human-meaningful local label for this device, same meaning as `device-announce`'s field of the same name. |
+| `device_id` | string | A human-meaningful local label for this device, same meaning as `device-announce`'s field of the same name. Shown to the person accepting the request; supplied by the requester, so it identifies nothing by itself. |
 | `device_did` | string | The requesting device's own independently-generated Device DID — not yet registered with the mediator; that happens after this exchange completes. |
 | `key_agreement_public` | string | The requesting device's own, independently-generated `keyAgreement` public key, multikey-encoded (the same encoding a `keyAgreement` entry's own `publicKeyMultibase` uses) — the one it will keep using for the rest of its enrolled life. Never a private key; the requesting device already holds the matching private half locally. |
 
 ### `device-enroll-response`
 
-Sent in reply (`thid` set to the request's `id`), encrypted specifically to
-the requesting device's `device_did` — never broadcast, never sent
-unprompted. Also reused, unprompted, for Key Rotation (see there) — sent to
-every other currently-enrolled sibling whenever a trusted device mints a
-new Identity DID document, in which case there is no corresponding
-`device-enroll-request` and `thid` is absent.
+Sent two ways, which differ in how they are packed and what makes them
+believable:
+
+- **As the reply to an accepted `device-enroll-request`** (`thid` set to
+  the request's `id`, `rotates: false`): sender-authenticated from the
+  accepting device's own Device DID, encrypted specifically to the
+  requesting device's `device_did`. The requesting device has no prior
+  document to judge a signature by; it accepts this reply only from the
+  Device DID its invitation named.
+- **As a roster change** (`rotates: true`, no `thid`), sent to every
+  other currently-enrolled sibling whenever a trusted device mints a new
+  Identity DID document (see Key Rotation), and again on request (see
+  `device-rotation-request`): a **signed** message,
+  `anoncrypt(sign(plaintext))`, whose `from` is the Identity DID being
+  rotated *from* and whose signer is an `authentication` key that
+  document lists. A receiver MUST ignore one that is not signed, whose
+  signer's DID is not the Identity DID the receiver is currently on (it
+  holds such a message rather than discarding it if its `rotation_seq` is
+  ahead — see below), or whose `from_prior` is not a valid rotation from
+  that same DID to `identity_did`.
 
 | Field | Type | Description |
 |---|---|---|
@@ -501,11 +618,40 @@ new Identity DID document, in which case there is no corresponding
 | `from_prior` | string | A signed `from_prior` JWT (per [DIDComm Messaging v2.1](https://identity.foundation/didcomm-messaging/spec/v2.1/)) naming the immediately-prior Identity DID this one supersedes. Absent only for a founding device's very first document, which supersedes nothing. |
 | `roster` | array of object | The sender's current roster (after this change), `{ device_id, device_did, key_agreement_public, authentication_public?, trusted }` per entry — every device's own *public* keys, never a private one, so the receiving device can itself mint a future rotation (see Key Rotation: any trusted device can do this, not just whichever one enrolled or revoked last) without a separate roster-fetch mechanism. |
 | `rotates` | boolean | `false`/absent for ordinary enrollment of the device this response is addressed to. `true` means this response is Key Rotation fan-out to an *already*-enrolled sibling — it keeps its existing `device_did` and its own `keyAgreement`/`authentication` keys (if still listed in `roster`), and only needs to re-`recipient-update` onto the new `identity_did`. |
-| `rotation_seq` | integer | How many roster-changing rotations the sender's identity has gone through, counting this one — `1` for the very first (an identity's founding document has no rotation at all, so there's nothing to number before it). A receiving device that already has an equal-or-higher `rotation_seq` recorded discards this message's `roster` and `identity_did` entirely rather than applying them. This exists because Identity DID *values* have no inherent ordering (each is an unpredictable hash of its own document), so without a monotonic counter, several rotations fanning out in quick succession — each an independent per-sibling send, not a single broadcast — can arrive out of order and let an older one silently resurrect a device state a newer one already superseded (e.g. a stale enrollment notice re-adding a device a subsequent revoke had just dropped). Absent only from messages predating this field; a receiver should treat that as "always apply" for backward compatibility, not as automatically stale. |
+| `rotation_seq` | integer | Which roster change this is: how many the identity has gone through, counting this one — `1` for the very first (an identity's founding document has no rotation at all, so there's nothing to number before it). Roster changes are applied **strictly in this order**. A device that has applied change *n* applies *n+1* next and nothing else: it discards one numbered *n* or lower (already applied or superseded — including its `roster`, which would otherwise resurrect whatever a later change dropped), and **holds** one numbered above *n+1* until the changes before it have been applied, asking for them with a `device-rotation-request`. This exists because Identity DID *values* have no inherent ordering (each is an unpredictable hash of its own document), and each fan-out is an independent per-sibling send that can arrive out of order or not at all. The number orders changes; it does not authorize them — that is the signature's job, and a correctly numbered change signed by the wrong document is still ignored. |
+| `device_did` | string | Roster changes only. The Device DID of the device sending this copy — covered by the signature, so a receiver that has to ask for missing changes knows one device able to supply them. |
 
 No field in this message is ever a private key. The single most sensitive
 value an earlier draft of this protocol transmitted no longer needs to be
 transmitted at all.
+
+### `device-enroll-deny`
+
+Sent in reply (`thid` set to the request's `id`) to a `device-enroll-request`
+the receiving device's user declined. Sender-authenticated. Empty body.
+Nothing else follows: no document is minted and the roster is unchanged.
+The requesting device stops waiting and discards the keys it generated
+for the attempt.
+
+### `device-rotation-request`
+
+Sent by an enrolled device that is holding a roster change it cannot yet
+apply, to ask for the ones it is missing — to the device named by the held
+change's `device_did`, and to any trusted sibling it knows of.
+Sender-authenticated; the sender must be in the receiver's roster like any
+other.
+
+| Field | Type | Description |
+|---|---|---|
+| `after_seq` | integer | The `rotation_seq` of the last roster change the sender has applied (`0` if none). |
+
+A receiver that is trusted replies with a roster-change
+`device-enroll-response` for each change it still has numbered above
+`after_seq`, in order. Each is signed afresh by the replying device: a
+signed message is encrypted to its one recipient and cannot simply be
+passed on, and a device can only sign a change made while it was itself
+trusted. Changes it cannot sign, or no longer has, it omits — another
+sibling may be able to supply them. There is no "nothing to send" reply.
 
 ### `device-announce`
 
@@ -529,8 +675,10 @@ Sent to every other known device announcing that one device should no
 longer be considered part of the identity. Expected to be followed shortly
 by a rotating `device-enroll-response` from the sender (see Key Rotation)
 — `device-revoke` itself only updates roster knowledge, it doesn't perform
-the rotation. Only meaningful coming from a trusted device — see Design By
-Contract. Never sent to the revoked device itself — telling it it's been
+the rotation. It is advance notice, not the authority: a receiver MUST
+ignore one whose sender is not a trusted device in its roster, and the
+roster change that follows removes the device regardless (see Security:
+a verified roster change is the roster). Never sent to the revoked device itself — telling it it's been
 cut off accomplishes nothing security-relevant (the rotation is what
 actually cuts it off), and a lost-or-compromised device is exactly the one
 this protocol has no reason to trust with advance notice.
@@ -547,21 +695,38 @@ chooses, asking to be promoted. Carries only a public key: the requesting
 device generates its own `authentication` keypair locally first (the same
 way a founding device or a newly-enrolling one generates its `keyAgreement`
 keypair — see Key Rotation) and hands over only the public half, exactly
-like `device-enroll-request`'s own `key_agreement_public`. There is no
-corresponding `device-promote-response` — the trusted device's reply is the
-same rotating `device-enroll-response` every other roster change already
-uses (see Key Rotation), which reaches the newly-promoted device too and
-is what actually confirms the promotion to everyone at once.
+like `device-enroll-request`'s own `key_agreement_public`. Unlike
+`device-enroll-request`, this does not take effect on receipt — see
+`device-promote-response` below and Key Rotation's own note on why
+promotion specifically gets a human accept/deny step the other roster
+changes don't.
 
 | Field | Type | Description |
 |---|---|---|
 | `authentication_public` | string | The requesting device's own, independently-generated `authentication` public key, multikey-encoded. Never a private key; the requesting device already holds the matching private half locally. |
+| `proof` | string | Proof of that: a JWT in the same form as `from_prior` (EdDSA, `iss`/`sub`/`iat`), signed with the private half of `authentication_public`, whose `iss` is that key's own `did:key` (`did:key:<authentication_public>`, `kid` `did:key:<authentication_public>#<authentication_public>`) and whose `sub` is the requesting device's Device DID. A receiver MUST ignore a request whose `proof` is absent, does not verify, is not issued under the `did:key` of exactly the key in `authentication_public`, or is not made out to the Device DID the request was sent from. |
+
+### `device-promote-response`
+
+Sent by the trusted device a `device-promote-request` was addressed to,
+once its own user has explicitly accepted or denied it. On acceptance,
+sent alongside (not instead of) the usual rotating `device-enroll-response`
+fan-out (see Key Rotation) — that fan-out is still what actually confirms
+the promotion to every device, this message just lets the requester's own
+UI react the moment its own request is resolved rather than waiting on
+that fan-out to arrive. On denial, nothing else follows: no document is
+minted, and the requester is expected to drop the `authentication` keypair
+it generated, since it was never going to be listed anywhere.
+
+| Field | Type | Description |
+|---|---|---|
+| `accepted` | boolean | Whether the promotion was granted. |
 
 ## Implementations
 
 Name / Link | Implementation Notes
 --- | ---
-_(none yet)_ | Proposed alongside [`history-sync/1.0`](../../history-sync/1.0/readme.md) for [`wyvrn-chat`](https://github.com/wyvern-cloud/wyvrn-chat); not yet implemented.
+[`wyvrn-chat`](https://github.com/wyvrn-cloud/chat) | `src/handlers/multiDevice/multiDeviceHandler.ts`; who is heard on the Device DID channel is enforced in `src/services/multiDevice/deviceChannelGuard.ts`. Keeps its 16 most recent roster changes for `device-rotation-request`; invitations last 10 minutes.
 
 ## Endnotes
 
