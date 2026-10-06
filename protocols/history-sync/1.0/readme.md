@@ -325,11 +325,28 @@ holds, and whether it has more beyond that:
   additional encryption layer here, and no content is ever exposed to the
   mediator beyond what ordinary message delivery already exposes (the
   mediator relays ciphertext it cannot read either way).
-- A device that has been `device-revoke`d but not yet had its mediator
-  registration removed could still answer or issue `history-sync/1.0`
-  requests until that removal takes effect — this protocol adds no
-  independent revocation check of its own; it relies entirely on
-  `multi-device/1.0`'s revocation actually being carried out.
+- That holds only if it is enforced, and a Device DID is not a secret
+  (see `multi-device/1.0`'s Security section): it is in every enrollment
+  invitation, and every device ever enrolled knows its siblings'. A
+  receiver MUST act on a message of this protocol only if it is
+  sender-authenticated by a Device DID that is in the receiver's current
+  roster and has not been revoked, and MUST silently ignore any other —
+  including one that is anonymously encrypted, whatever its plaintext
+  `from` claims, and one that is signed rather than sender-authenticated.
+  This applies to every message type here, requests and unprompted
+  `item-batch`es alike: the requests hand over contacts and complete
+  message history, and the batches are stored as received.
+- A revoked device's own Device DID keeps working, and nobody tells it
+  that it was revoked, so it will go on issuing `history-sync/1.0`
+  requests as before. The rule above is what stops them being answered;
+  removing its mediator registration is not something its former
+  siblings can do, and must not be relied on.
+- The roster itself (`devices`) is reconciled like any other collection,
+  with two limits that keep reconciliation from overriding
+  `multi-device/1.0`: a device that has been revoked is never re-added by
+  a sibling's copy of its roster entry, and fields that are one device's
+  own bookkeeping about another (an outstanding promotion request) are
+  neither sent nor overwritten.
 - Hashes exchanged here (`chunk-manifest-response`/`chunk-members-response`)
   reveal the *existence and count* of messages in a range to any device
   that can authenticate as a sibling, even before that device fetches
