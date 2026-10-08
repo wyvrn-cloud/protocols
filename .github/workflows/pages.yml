@@ -1,0 +1,59 @@
+name: Site
+
+# Builds the protocol registry site with Hugo from the repo's own readmes
+# (scripts/build_site.py, site/) on every push and pull request, and publishes it
+# to GitHub Pages from master. Pages must be set to deploy from GitHub Actions
+# (Settings -> Pages -> Source) once; after that every merge to master deploys.
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build site
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+      - uses: peaceiris/actions-hugo@v3
+        with:
+          hugo-version: "0.167.0"
+          extended: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - id: pages
+        if: github.event_name != 'pull_request'
+        uses: actions/configure-pages@v5
+      - run: python3 scripts/build_site.py
+      - run: hugo --gc --minify --source site --baseURL "${{ steps.pages.outputs.base_url || 'https://wyvrn-cloud.github.io/protocols' }}/"
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site/public
+
+  deploy:
+    name: Deploy to GitHub Pages
+    if: github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
