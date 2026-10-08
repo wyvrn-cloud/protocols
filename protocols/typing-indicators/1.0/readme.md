@@ -284,7 +284,7 @@ Name / Link | Implementation Notes
 --- | ---
 [`wyvrn-chat`](https://github.com/wyvrn-cloud/chat) | Not yet implemented. A handler at `src/handlers/typingIndicators/` registered in `src/services/didcomm/messageRouter.ts` is the starting point for receiving; sending hangs off the message box (`src/components/chat/MessageInput.tsx`) and goes through the worker like any other send.
 [`wyvrn-didcomm`](https://github.com/wyvrn-cloud/didcomm) | Builds the `routing/2.0/forward` wrapper for a mediated recipient (`crates/didcomm-core/src/routing.rs`, `create_forward_message`), setting `created_time` only. It needs to copy the inner message's `expires_time` onto every forward it wraps it in, as this protocol's Composition requires of the sender; it does not today.
-[`wyvrn-mediator`](https://github.com/wyvrn-cloud/mediator) | Needs the mediator behaviour in Composition: deliver live or drop an expired `forward` rather than queue it, purge one from the queue at its `expires_time`, and never push for one about to expire. It does not today: every `forward` it cannot deliver live is queued, and a queued message is what triggers a push.
+[`wyvrn-mediator`](../../../../wyvrn-mediator) | Needs the mediator behaviour in Composition: deliver live or drop an expired `forward` rather than queue it, purge one from the queue at its `expires_time`, and never push for one about to expire. It does not today: every `forward` it cannot deliver live is queued, and a queued message is what triggers a push.
 
 ## Endnotes
 

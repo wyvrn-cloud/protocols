@@ -309,7 +309,7 @@ it holds when the message arrives.
   its place to a party that doesn't; the `expires_time` header is set on
   that party's messages all the same, including a `basicmessage/2.0` plain
   form, and a sender SHOULD show that such a party keeps messages for ever.
-- **With [`history-sync/1.0`](../../history-sync/1.0/readme.md).** A
+- **With [`history-sync/1.1`](../../history-sync/1.1/readme.md).** A
   person's own devices sync their copies of a message with its
   `expires_time`, so that every device removes it at the same time. A device
   that syncs a message already expired discards it.
