@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "history-sync/1.1/search-request",
+  "description": "Asks a sibling device for the messages of one conversation whose text matches a query, newest first.",
+  "type": "object",
+  "required": [
+    "id",
+    "type",
+    "from",
+    "body"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Message ID; the search-response carries it as thid."
+    },
+    "type": {
+      "const": "https://wyvrn.app/history-sync/1.1/search-request"
+    },
+    "from": {
+      "type": "string",
+      "pattern": "^did:[a-z0-9]+:[^#]+$",
+      "description": "The requesting device's Device DID. Always present: every message of this protocol is sent sender-authenticated, and a receiver acts on it only if that DID is in its roster."
+    },
+    "to": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^did:[a-z0-9]+:[^#]+$"
+      },
+      "description": "The one sibling device asked. Never broadcast."
+    },
+    "created_time": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "UTC epoch seconds."
+    },
+    "body": {
+      "type": "object",
+      "required": [
+        "collection_id",
+        "query",
+        "limit"
+      ],
+      "properties": {
+        "collection_id": {
+          "type": "string",
+          "pattern": "^messages:.+$",
+          "description": "messages:<conversation_id> -- the one conversation searched."
+        },
+        "query": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200,
+          "description": "Plain text. Split on whitespace into terms; every term must occur in a matching message's current text, compared case-insensitively."
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Maximum matches to return. The responder may return fewer and may cap it."
+        },
+        "before": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Return only matches older than this message id, for paging. Absent: from the newest."
+        }
+      }
+    }
+  }
+}
