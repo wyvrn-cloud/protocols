@@ -1,0 +1,148 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "group-chat/2.0/update",
+  "description": "From the admin, to every other member: the group's name, picture or settings changed. Carries only what changed.",
+  "type": "object",
+  "required": [
+    "id",
+    "type",
+    "from",
+    "created_time",
+    "body"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Message ID, unique to the sender."
+    },
+    "type": {
+      "const": "https://wyvrn.app/group-chat/2.0/update"
+    },
+    "from": {
+      "type": "string",
+      "pattern": "^did:[a-z0-9]+:[^#]+$",
+      "description": "Sender DID. Always present: these messages are sent authenticated, and the envelope, not the body, says who sent them."
+    },
+    "to": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^did:[a-z0-9]+:[^#]+$"
+      }
+    },
+    "created_time": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "UTC epoch seconds. Orders this change against others."
+    },
+    "attachments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "media_type",
+          "data"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "media_type": {
+            "type": "string",
+            "pattern": "^image/[-\\w.+]+$",
+            "description": "An image type."
+          },
+          "filename": {
+            "type": "string"
+          },
+          "byte_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "description": {
+            "type": "string",
+            "description": "Alternative text."
+          },
+          "data": {
+            "type": "object",
+            "required": [
+              "base64"
+            ],
+            "properties": {
+              "base64": {
+                "type": "string"
+              }
+            },
+            "description": "Inline, up to 256 KiB. Never by reference."
+          }
+        }
+      },
+      "description": "The group picture, when body.picture is set."
+    },
+    "body": {
+      "type": "object",
+      "required": [
+        "group_id"
+      ],
+      "properties": {
+        "group_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The group's id, a UUID minted by its creator. Compared case-insensitively."
+        },
+        "name": {
+          "type": "string",
+          "description": "The new name."
+        },
+        "picture": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^#.+$",
+          "description": "'#' followed by the id of an inline image/* attachment, or null to remove the picture."
+        },
+        "settings": {
+          "type": "object",
+          "properties": {
+            "who_may_add": {
+              "enum": [
+                "members",
+                "admin"
+              ],
+              "description": "Who may add a member. Default: members."
+            },
+            "who_may_pin": {
+              "enum": [
+                "members",
+                "admin"
+              ],
+              "description": "Who may pin a message for everyone (chat-pins/1.0). Default: members."
+            }
+          },
+          "description": "Each key present replaces that setting; absent keys are unchanged."
+        }
+      },
+      "anyOf": [
+        {
+          "required": [
+            "name"
+          ]
+        },
+        {
+          "required": [
+            "picture"
+          ]
+        },
+        {
+          "required": [
+            "settings"
+          ]
+        }
+      ]
+    }
+  }
+}

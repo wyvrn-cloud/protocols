@@ -1,0 +1,123 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "chat-threads/1.0/thread-create",
+  "description": "Turns a reply chain into a thread: names its root, lists the chain's messages that belong to it, and optionally names it. Sent by someone who wrote in the chain to everyone in the conversation.",
+  "type": "object",
+  "required": [
+    "id",
+    "type",
+    "from",
+    "thid",
+    "created_time",
+    "body"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Message ID, unique to the sender; the same id goes to every member of a group."
+    },
+    "type": {
+      "const": "https://wyvrn.app/chat-threads/1.0/thread-create"
+    },
+    "from": {
+      "type": "string",
+      "pattern": "^did:[a-z0-9]+:[^#]+$",
+      "description": "Sender DID. Always present: these messages are sent authenticated, and the envelope, not the body, says who sent them."
+    },
+    "to": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^did:[a-z0-9]+:[^#]+$"
+      }
+    },
+    "pthid": {
+      "type": "string",
+      "description": "In a group conversation, the group's id. Absent in a pair."
+    },
+    "thid": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The thread's id: the root message's id, equal to body.root.id. Compared case-insensitively."
+    },
+    "created_time": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "UTC epoch seconds. Of two creations with the same root, the earlier stands."
+    },
+    "expires_time": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "UTC epoch seconds; the root's expiry, when it has one (disappearing-messages/1.0)."
+    },
+    "body": {
+      "type": "object",
+      "required": [
+        "root",
+        "messages"
+      ],
+      "properties": {
+        "root": {
+          "type": "object",
+          "required": [
+            "id",
+            "author"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "minLength": 1,
+              "description": "The id of the message referred to. Compared case-insensitively."
+            },
+            "author": {
+              "type": "string",
+              "pattern": "^did:[a-z0-9]+:[^#]+$",
+              "description": "The DID that sent it, as the referring party knows it (its current DID or one it rotated away from)."
+            },
+            "snippet": {
+              "type": "string",
+              "maxLength": 100,
+              "description": "The start of the referred message's text as it read when the reference was made, or its label (e.g. \"Photo\") if it has no text. Counted in characters."
+            }
+          },
+          "description": "The message at the root of the chain, in the same conversation. Its id is the thread's id."
+        },
+        "messages": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "author"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "description": "The id of the message referred to. Compared case-insensitively."
+              },
+              "author": {
+                "type": "string",
+                "pattern": "^did:[a-z0-9]+:[^#]+$",
+                "description": "The DID that sent it, as the referring party knows it (its current DID or one it rotated away from)."
+              },
+              "snippet": {
+                "type": "string",
+                "maxLength": 100,
+                "description": "The start of the referred message's text as it read when the reference was made, or its label if it has no text. Counted in characters."
+              }
+            }
+          },
+          "description": "The chain's messages that belong to the thread, other than the root, oldest first. May be empty."
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "description": "The thread's name, plain text. Absent: the root's label."
+        }
+      }
+    }
+  }
+}

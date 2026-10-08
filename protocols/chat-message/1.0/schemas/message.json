@@ -1,0 +1,372 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "chat-message/1.0/message",
+  "description": "A chat message: Markdown text that may reply to an earlier message, mention group members, carry media as attachments, bring link previews, or be a forward.",
+  "type": "object",
+  "required": [
+    "id",
+    "type",
+    "from",
+    "created_time",
+    "body"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Message ID, unique to the sender; the same id goes to every member of a group."
+    },
+    "type": {
+      "const": "https://wyvrn.app/chat-message/1.0/message"
+    },
+    "from": {
+      "type": "string",
+      "pattern": "^did:[a-z0-9]+:[^#]+$",
+      "description": "Sender DID. Always present: these messages are sent authenticated, and the envelope, not the body, says who sent them."
+    },
+    "to": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^did:[a-z0-9]+:[^#]+$"
+      }
+    },
+    "pthid": {
+      "type": "string",
+      "description": "In a group conversation, the group's id. Absent in a pair."
+    },
+    "thid": {
+      "type": "string",
+      "description": "In a thread (chat-threads/1.0), the thread's id. Otherwise absent."
+    },
+    "created_time": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "UTC epoch seconds."
+    },
+    "expires_time": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "UTC epoch seconds; set under a disappearing-messages/1.0 timer."
+    },
+    "lang": {
+      "type": "string",
+      "description": "IANA language tag of content."
+    },
+    "attachments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "media_type",
+          "data"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "media_type": {
+            "type": "string",
+            "pattern": "^[-\\w.+]+/[-\\w.+]+$"
+          },
+          "filename": {
+            "type": "string"
+          },
+          "byte_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "description": {
+            "type": "string",
+            "description": "Alternative text."
+          },
+          "data": {
+            "type": "object",
+            "oneOf": [
+              {
+                "required": [
+                  "base64"
+                ],
+                "properties": {
+                  "base64": {
+                    "type": "string"
+                  }
+                },
+                "description": "Inline, up to 256 KiB."
+              },
+              {
+                "required": [
+                  "links",
+                  "hash"
+                ],
+                "properties": {
+                  "links": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                      "type": "string",
+                      "format": "uri"
+                    }
+                  },
+                  "hash": {
+                    "type": "string",
+                    "description": "Base58btc multihash of the bytes at the link, as stored."
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    "body": {
+      "type": "object",
+      "required": [
+        "content"
+      ],
+      "properties": {
+        "content": {
+          "type": "string",
+          "maxLength": 8000,
+          "description": "The text, in Markdown. May be empty only if media is present."
+        },
+        "reply_to": {
+          "type": "object",
+          "required": [
+            "id",
+            "author"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "minLength": 1,
+              "description": "The id of the message referred to. Compared case-insensitively."
+            },
+            "author": {
+              "type": "string",
+              "pattern": "^did:[a-z0-9]+:[^#]+$",
+              "description": "The DID that sent it, as the referring party knows it (its current DID or one it rotated away from)."
+            },
+            "snippet": {
+              "type": "string",
+              "maxLength": 100,
+              "description": "The start of the referred message's text as it read when the reference was made, or its label (e.g. \"Photo\") if it has no text. Counted in characters."
+            }
+          },
+          "description": "The message this one answers, in the same conversation."
+        },
+        "mentions": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              {
+                "type": "object",
+                "required": [
+                  "did"
+                ],
+                "properties": {
+                  "did": {
+                    "type": "string",
+                    "pattern": "^did:[a-z0-9]+:[^#]+$"
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "required": [
+                  "everyone"
+                ],
+                "properties": {
+                  "everyone": {
+                    "const": true
+                  }
+                }
+              }
+            ]
+          },
+          "description": "Members mentioned, each also written in content as a Markdown link to its DID; or everyone. Groups only."
+        },
+        "media": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": [
+              "attachment"
+            ],
+            "properties": {
+              "attachment": {
+                "type": "string",
+                "minLength": 1,
+                "description": "The id of the entry in attachments[]."
+              },
+              "kind": {
+                "enum": [
+                  "attachment",
+                  "gif",
+                  "sticker"
+                ],
+                "description": "How to show it. Default: attachment."
+              },
+              "ciphering": {
+                "type": "object",
+                "required": [
+                  "algorithm",
+                  "parameters"
+                ],
+                "properties": {
+                  "algorithm": {
+                    "type": "string",
+                    "description": "<algo>-<length>-<mode>, lowercase; aes-256-gcm must be supported."
+                  },
+                  "parameters": {
+                    "type": "object",
+                    "required": [
+                      "key",
+                      "iv"
+                    ],
+                    "properties": {
+                      "key": {
+                        "type": "string",
+                        "pattern": "^[0-9a-fA-F]+$"
+                      },
+                      "iv": {
+                        "type": "string",
+                        "pattern": "^[0-9a-fA-F]+$"
+                      },
+                      "tag": {
+                        "type": "string",
+                        "pattern": "^[0-9a-fA-F]+$"
+                      }
+                    }
+                  }
+                },
+                "description": "Key material for bytes by reference that were encrypted before upload (media-sharing/1.0's shape)."
+              },
+              "width": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "height": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "duration": {
+                "type": "number",
+                "minimum": 0,
+                "description": "Seconds."
+              },
+              "preview": {
+                "type": "string",
+                "description": "The attachment id of a small inline thumbnail."
+              },
+              "blurhash": {
+                "type": "string"
+              },
+              "sticker": {
+                "type": "object",
+                "required": [
+                  "pack_id",
+                  "sticker_id"
+                ],
+                "properties": {
+                  "pack_id": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "sticker_id": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "service": {
+                    "type": "string",
+                    "format": "uri",
+                    "description": "Where the pack can be fetched."
+                  }
+                }
+              }
+            },
+            "if": {
+              "properties": {
+                "kind": {
+                  "const": "sticker"
+                }
+              },
+              "required": [
+                "kind"
+              ]
+            },
+            "then": {
+              "required": [
+                "sticker"
+              ]
+            }
+          }
+        },
+        "embeds": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "url"
+            ],
+            "properties": {
+              "url": {
+                "type": "string",
+                "format": "uri",
+                "description": "The link, exactly as it appears in content."
+              },
+              "title": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "site_name": {
+                "type": "string"
+              },
+              "image": {
+                "type": "string",
+                "description": "The attachment id of an inline thumbnail."
+              }
+            }
+          },
+          "description": "Link previews built by the sender for links in content."
+        },
+        "forwarded": {
+          "type": "object",
+          "properties": {
+            "author": {
+              "type": "string",
+              "pattern": "^did:[a-z0-9]+:[^#]+$"
+            },
+            "author_name": {
+              "type": "string"
+            },
+            "created_time": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "description": "Present when forwarded from another conversation; every field is the sender's claim."
+        }
+      },
+      "anyOf": [
+        {
+          "properties": {
+            "content": {
+              "minLength": 1
+            }
+          }
+        },
+        {
+          "required": [
+            "media"
+          ]
+        }
+      ]
+    }
+  }
+}

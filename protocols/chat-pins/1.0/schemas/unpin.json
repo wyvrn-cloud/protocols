@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "chat-pins/1.0/unpin",
+  "description": "Unpins a message for everyone in the conversation, whoever pinned it. Idempotent; per target, the later of a pin and an unpin stands.",
+  "type": "object",
+  "required": [
+    "id",
+    "type",
+    "from",
+    "created_time",
+    "body"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Message ID, unique to the sender; the same id goes to every member of a group."
+    },
+    "type": {
+      "const": "https://wyvrn.app/chat-pins/1.0/unpin"
+    },
+    "from": {
+      "type": "string",
+      "pattern": "^did:[a-z0-9]+:[^#]+$",
+      "description": "Sender DID. Always present: these messages are sent authenticated, and the envelope, not the body, says who sent them."
+    },
+    "to": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^did:[a-z0-9]+:[^#]+$"
+      }
+    },
+    "pthid": {
+      "type": "string",
+      "description": "In a group conversation, the group's id. Absent in a pair."
+    },
+    "thid": {
+      "type": "string",
+      "description": "The target's thread id, if the target is in a thread (chat-threads/1.0). Otherwise absent."
+    },
+    "created_time": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "UTC epoch seconds. Of the pins and unpins of one target, the one with the latest value stands; on a tie, the unpin."
+    },
+    "expires_time": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "UTC epoch seconds; the target's expiry, when it has one (disappearing-messages/1.0)."
+    },
+    "body": {
+      "type": "object",
+      "required": [
+        "target"
+      ],
+      "properties": {
+        "target": {
+          "type": "object",
+          "required": [
+            "id",
+            "author"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "minLength": 1,
+              "description": "The id of the message referred to. Compared case-insensitively."
+            },
+            "author": {
+              "type": "string",
+              "pattern": "^did:[a-z0-9]+:[^#]+$",
+              "description": "The DID that sent it, as the referring party knows it (its current DID or one it rotated away from)."
+            }
+          },
+          "description": "The message unpinned, in the same conversation. A message reference; a snippet is not used here."
+        }
+      }
+    }
+  }
+}

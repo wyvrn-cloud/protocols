@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "group-chat/2.0/leave",
+  "description": "From a member leaving, to every other member. The member removed is the sender.",
+  "type": "object",
+  "required": [
+    "id",
+    "type",
+    "from",
+    "created_time",
+    "body"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Message ID, unique to the sender."
+    },
+    "type": {
+      "const": "https://wyvrn.app/group-chat/2.0/leave"
+    },
+    "from": {
+      "type": "string",
+      "pattern": "^did:[a-z0-9]+:[^#]+$",
+      "description": "Sender DID. Always present: these messages are sent authenticated, and the envelope, not the body, says who sent them."
+    },
+    "to": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^did:[a-z0-9]+:[^#]+$"
+      }
+    },
+    "created_time": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "UTC epoch seconds. Orders this change against others."
+    },
+    "body": {
+      "type": "object",
+      "required": [
+        "group_id",
+        "members"
+      ],
+      "properties": {
+        "group_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The group's id, a UUID minted by its creator. Compared case-insensitively."
+        },
+        "members": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": [
+              "did",
+              "added_time"
+            ],
+            "properties": {
+              "did": {
+                "type": "string",
+                "pattern": "^did:[a-z0-9]+:[^#]+$",
+                "description": "The member's DID."
+              },
+              "added_time": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "When they were added, UTC epoch seconds; for the creator, when the group was created. Orders the list and decides succession."
+              },
+              "added_by": {
+                "type": "string",
+                "pattern": "^did:[a-z0-9]+:[^#]+$",
+                "description": "The DID of the member who added them."
+              }
+            }
+          },
+          "description": "The full list without the sender."
+        }
+      }
+    }
+  }
+}

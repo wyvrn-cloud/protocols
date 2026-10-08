@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "typing-indicators/1.0/typing",
+  "description": "The sender is typing a message in this conversation now. Holds until expires_time, or until a message from the sender arrives in the conversation. Delivered live or not at all.",
+  "type": "object",
+  "required": [
+    "id",
+    "type",
+    "from",
+    "created_time",
+    "expires_time",
+    "body"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Message ID, unique to the sender; the same id goes to every member of a group. Each re-send while typing continues has a new id."
+    },
+    "type": {
+      "const": "https://wyvrn.app/typing-indicators/1.0/typing"
+    },
+    "from": {
+      "type": "string",
+      "pattern": "^did:[a-z0-9]+:[^#]+$",
+      "description": "Sender DID. Always present: these messages are sent authenticated, and the envelope, not the body, says who sent them."
+    },
+    "to": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^did:[a-z0-9]+:[^#]+$"
+      }
+    },
+    "pthid": {
+      "type": "string",
+      "description": "In a group conversation, the group's id. Absent in a pair."
+    },
+    "thid": {
+      "type": "string",
+      "description": "When the sender is typing in a thread (chat-threads/1.0), the thread's id. Otherwise absent."
+    },
+    "created_time": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "UTC epoch seconds."
+    },
+    "expires_time": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "UTC epoch seconds, about 10 and at most 30 seconds after created_time. The indicator is shown until then; the same value goes on every routing/2.0/forward wrapping this message, so that a mediator drops it rather than queue or push it."
+    },
+    "body": {
+      "type": "object",
+      "description": "Empty in this version. A receiver ignores any field it finds."
+    }
+  }
+}

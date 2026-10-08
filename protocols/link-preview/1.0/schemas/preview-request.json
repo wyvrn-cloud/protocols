@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "link-preview/1.0/preview-request",
+  "description": "Asks one of the sender's own enrolled devices (multi-device/1.0) to build the preview of a link the sender is about to send, because the sender cannot read the page itself.",
+  "type": "object",
+  "required": [
+    "id",
+    "type",
+    "from",
+    "created_time",
+    "body"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Message ID, unique to the sender. The response's thid."
+    },
+    "type": {
+      "const": "https://wyvrn.app/link-preview/1.0/preview-request"
+    },
+    "from": {
+      "type": "string",
+      "pattern": "^did:[a-z0-9]+:[^#]+$",
+      "description": "The requesting device's Device DID. Always present: sent sender-authenticated, and acted on only if that DID is in the receiver's roster and not revoked."
+    },
+    "to": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^did:[a-z0-9]+:[^#]+$"
+      },
+      "description": "The builder device's Device DID."
+    },
+    "created_time": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "UTC epoch seconds."
+    },
+    "expires_time": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "UTC epoch seconds, about 15 seconds after created_time; copied onto every routing/2.0/forward so that a mediator drops rather than queues or pushes it. A builder does not answer an expired request."
+    },
+    "body": {
+      "type": "object",
+      "required": [
+        "url"
+      ],
+      "properties": {
+        "url": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^https?://",
+          "description": "The link, exactly as it will appear in the message's content."
+        }
+      }
+    }
+  }
+}

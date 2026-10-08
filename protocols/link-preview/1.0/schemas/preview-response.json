@@ -1,0 +1,167 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "link-preview/1.0/preview-response",
+  "description": "The preview a builder device made of the link a sibling asked about: title, description, site name and an inline thumbnail — the fields of chat-message/1.0's link preview — or an error saying why there is none.",
+  "type": "object",
+  "required": [
+    "id",
+    "type",
+    "from",
+    "thid",
+    "created_time",
+    "body"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Message ID, unique to the sender."
+    },
+    "type": {
+      "const": "https://wyvrn.app/link-preview/1.0/preview-response"
+    },
+    "from": {
+      "type": "string",
+      "pattern": "^did:[a-z0-9]+:[^#]+$",
+      "description": "The builder device's Device DID. Always present: sent sender-authenticated, and accepted only from the device the request was sent to."
+    },
+    "to": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^did:[a-z0-9]+:[^#]+$"
+      },
+      "description": "The requesting device's Device DID."
+    },
+    "thid": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The id of the preview-request this answers."
+    },
+    "created_time": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "UTC epoch seconds."
+    },
+    "attachments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "media_type",
+          "data"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "media_type": {
+            "type": "string",
+            "pattern": "^image/[-\\w.+]+$",
+            "description": "An image type: the thumbnail, re-encoded by the builder."
+          },
+          "byte_count": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 65536,
+            "description": "At most 64 KiB."
+          },
+          "description": {
+            "type": "string",
+            "description": "Alternative text."
+          },
+          "data": {
+            "type": "object",
+            "required": [
+              "base64"
+            ],
+            "properties": {
+              "base64": {
+                "type": "string",
+                "description": "Inline only; at most 64 KiB decoded."
+              }
+            }
+          }
+        }
+      }
+    },
+    "body": {
+      "type": "object",
+      "required": [
+        "url"
+      ],
+      "properties": {
+        "url": {
+          "type": "string",
+          "format": "uri",
+          "description": "The request's url, unchanged."
+        },
+        "title": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "site_name": {
+          "type": "string"
+        },
+        "image": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The attachment id of the inline thumbnail."
+        },
+        "error": {
+          "type": "object",
+          "required": [
+            "code"
+          ],
+          "properties": {
+            "code": {
+              "enum": [
+                "refused",
+                "unreachable",
+                "timeout",
+                "too-large",
+                "unsupported"
+              ]
+            },
+            "comment": {
+              "type": "string",
+              "description": "For diagnostics; never shown as the page's words."
+            }
+          },
+          "description": "Present, and title, description, site_name and image absent, when the page could not be read."
+        }
+      },
+      "not": {
+        "required": [
+          "error"
+        ],
+        "anyOf": [
+          {
+            "required": [
+              "title"
+            ]
+          },
+          {
+            "required": [
+              "description"
+            ]
+          },
+          {
+            "required": [
+              "site_name"
+            ]
+          },
+          {
+            "required": [
+              "image"
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "message-reactions/1.0/reactions",
+  "description": "The sender's complete, current set of emoji reactions to one message. Replaces any set the sender stated for that message earlier.",
+  "type": "object",
+  "required": [
+    "id",
+    "type",
+    "from",
+    "created_time",
+    "body"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Message ID, unique to the sender; the same id goes to every member of a group."
+    },
+    "type": {
+      "const": "https://wyvrn.app/message-reactions/1.0/reactions"
+    },
+    "from": {
+      "type": "string",
+      "pattern": "^did:[a-z0-9]+:[^#]+$",
+      "description": "Sender DID. Always present: these messages are sent authenticated, and the envelope, not the body, says who sent them."
+    },
+    "to": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^did:[a-z0-9]+:[^#]+$"
+      }
+    },
+    "pthid": {
+      "type": "string",
+      "description": "In a group conversation, the group's id. Absent in a pair."
+    },
+    "thid": {
+      "type": "string",
+      "description": "When the message reacted to is in a thread (chat-threads/1.0), the thread's id. Otherwise absent."
+    },
+    "created_time": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "UTC epoch seconds. Of a sender's statements about one message, the one with the latest value is the one that stands."
+    },
+    "expires_time": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "UTC epoch seconds; the same value as the message reacted to carries under a disappearing-messages/1.0 timer."
+    },
+    "body": {
+      "type": "object",
+      "required": [
+        "to",
+        "emoji"
+      ],
+      "properties": {
+        "to": {
+          "type": "object",
+          "required": [
+            "id",
+            "author"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "minLength": 1,
+              "description": "The id of the message referred to. Compared case-insensitively."
+            },
+            "author": {
+              "type": "string",
+              "pattern": "^did:[a-z0-9]+:[^#]+$",
+              "description": "The DID that sent it, as the referring party knows it (its current DID or one it rotated away from)."
+            }
+          },
+          "description": "The message reacted to: a chat-message/1.0 message reference, without a snippet."
+        },
+        "emoji": {
+          "type": "array",
+          "uniqueItems": true,
+          "maxItems": 20,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "One emoji as a single Unicode emoji sequence. A later minor version may add an object form; this version has strings only."
+          },
+          "description": "Distinct emoji, in the order the sender added them. Empty means the sender has no reactions on the message."
+        }
+      }
+    }
+  }
+}

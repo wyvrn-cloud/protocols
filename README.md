@@ -72,8 +72,17 @@ implementing it would move to the real `didcomm.org` PIURI.
 | Protocol | Version | Status | Used by |
 |---|---|---|---|
 | [`group-chat`](protocols/group-chat/1.0/readme.md) | 1.0 | Proposed | [`wyvrn-chat`](../wyvrn-chat) |
+| [`group-chat`](protocols/group-chat/2.0/readme.md) | 2.0 | Proposed | none yet -- adds an admin, removal, leaving and group settings; supersedes 1.0 for new groups |
+| [`chat-message`](protocols/chat-message/1.0/readme.md) | 1.0 | Proposed | none yet -- the core of the chat family: replies, mentions, media, link previews, forwards, edits, deletes; defines the message reference the rest share |
+| [`message-reactions`](protocols/message-reactions/1.0/readme.md) | 1.0 | Proposed | none yet -- emoji reactions |
+| [`chat-threads`](protocols/chat-threads/1.0/readme.md) | 1.0 | Proposed | none yet -- a reply chain turned into a named thread |
+| [`typing-indicators`](protocols/typing-indicators/1.0/readme.md) | 1.0 | Proposed | none yet -- live-only typing notices |
+| [`chat-pins`](protocols/chat-pins/1.0/readme.md) | 1.0 | Proposed | none yet -- shared pins |
+| [`disappearing-messages`](protocols/disappearing-messages/1.0/readme.md) | 1.0 | Proposed | none yet -- a per-conversation timer, via `expires_time` |
+| [`link-preview`](protocols/link-preview/1.0/readme.md) | 1.0 | Proposed | none yet -- a web device asks its own native sibling to build a link preview |
 | [`multi-device`](protocols/multi-device/1.0/readme.md) | 1.0 | Implemented | [`wyvrn-chat`](../wyvrn-chat) |
 | [`history-sync`](protocols/history-sync/1.0/readme.md) | 1.0 | Implemented | [`wyvrn-chat`](../wyvrn-chat) |
+| [`history-sync`](protocols/history-sync/1.1/readme.md) | 1.1 | Proposed | none yet -- editable messages, new synced collections (follows, bookmarks, mutes, blocks, sticker packs), search across a person's devices |
 | [`push-notifications`](protocols/push-notifications/1.0/readme.md) | 1.0 | Proposed | none yet — design proposal (browser PWA build) |
 | [`push-notifications-fcm`](protocols/push-notifications-fcm/1.0/readme.md) | 1.0 | Adopted (not wyvrn-authored -- see its own readme) | [`wyvrn-chat`](../wyvrn-chat) (Android), [`wyvrn-mediator`](../wyvrn-mediator) |
 | [`coordinate-mediation`](protocols/coordinate-mediation/3.1/readme.md) | 3.1 | Proposed (minor addition to the real, Production `3.0` -- see its own readme's note on using the real PIURI early) | [`wyvrn-chat`](../wyvrn-chat), [`wyvrn-mediator`](../wyvrn-mediator) |

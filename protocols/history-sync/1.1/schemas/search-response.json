@@ -1,0 +1,187 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "history-sync/1.1/search-response",
+  "description": "The matching messages a sibling device holds for a search-request, in the full form backfill-response carries.",
+  "type": "object",
+  "required": [
+    "id",
+    "type",
+    "from",
+    "thid",
+    "body"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "type": {
+      "const": "https://wyvrn.app/history-sync/1.1/search-response"
+    },
+    "from": {
+      "type": "string",
+      "pattern": "^did:[a-z0-9]+:[^#]+$",
+      "description": "The answering device's Device DID. Always present: every message of this protocol is sent sender-authenticated."
+    },
+    "to": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^did:[a-z0-9]+:[^#]+$"
+      }
+    },
+    "thid": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The search-request's id."
+    },
+    "created_time": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "UTC epoch seconds."
+    },
+    "body": {
+      "type": "object",
+      "required": [
+        "collection_id",
+        "matches",
+        "has_more"
+      ],
+      "properties": {
+        "collection_id": {
+          "type": "string",
+          "pattern": "^messages:.+$",
+          "description": "Echoes the request."
+        },
+        "matches": {
+          "type": "array",
+          "description": "Matching message items, newest first. Deleted messages never match, so no tombstones. Empty if the responder holds no match or not the collection.",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "conversation",
+              "sender",
+              "created_time"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "conversation": {
+                "type": "string",
+                "minLength": 1,
+                "description": "The conversation id: a contact's DID, or group:<group id>."
+              },
+              "sender": {
+                "type": "string",
+                "pattern": "^did:[a-z0-9]+:[^#]+$",
+                "description": "The DID that sent the message, as authenticated when it arrived."
+              },
+              "created_time": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "UTC epoch seconds; the message's own created_time."
+              },
+              "content": {
+                "type": "string",
+                "description": "The text as currently edited."
+              },
+              "mentions": {
+                "type": "array",
+                "items": {
+                  "type": "object"
+                }
+              },
+              "embeds": {
+                "type": "array",
+                "items": {
+                  "type": "object"
+                }
+              },
+              "media": {
+                "type": "array",
+                "items": {
+                  "type": "object"
+                },
+                "description": "chat-message/1.0 media items, as received."
+              },
+              "attachments": {
+                "type": "array",
+                "items": {
+                  "type": "object"
+                },
+                "description": "DIDComm attachments, as received."
+              },
+              "reply_to": {
+                "type": "object"
+              },
+              "forwarded": {
+                "type": "object"
+              },
+              "thread": {
+                "type": "string",
+                "description": "The thread the message was sent in, or is the root of (chat-threads/1.0)."
+              },
+              "edited": {
+                "type": "object",
+                "description": "For each edited field, the created_time of the edit applied to it.",
+                "properties": {
+                  "content": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "mentions": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "embeds": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                }
+              },
+              "deleted": {
+                "const": false,
+                "description": "A deleted message never matches a search."
+              },
+              "reactions": {
+                "type": "object",
+                "description": "Reactor DID -> sorted array of emoji.",
+                "additionalProperties": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              },
+              "pinned": {
+                "type": "object",
+                "required": [
+                  "by",
+                  "created_time"
+                ],
+                "properties": {
+                  "by": {
+                    "type": "string",
+                    "pattern": "^did:[a-z0-9]+:[^#]+$"
+                  },
+                  "created_time": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                }
+              }
+            }
+          }
+        },
+        "has_more": {
+          "type": "boolean",
+          "description": "True if the responder has older matches beyond the last one returned."
+        }
+      }
+    }
+  }
+}
