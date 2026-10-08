@@ -196,6 +196,9 @@ Message Type URI: `https://wyvrn.app/chat-message/1.0/message`
 | `content` | string | REQUIRED. The text of the message. May be empty only if a later version's fields give the message other content. |
 | `reply_to` | message reference | OPTIONAL. The message this one answers. See Design By Contract. |
 
+Schema: [`schemas/message.json`](schemas/message.json) validates the whole message,
+headers included.
+
 ## Implementations
 
 Name / Link | Implementation Notes

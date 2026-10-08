@@ -72,6 +72,8 @@ implementing it would move to the real `didcomm.org` PIURI.
 | Protocol | Version | Status | Used by |
 |---|---|---|---|
 | [`group-chat`](protocols/group-chat/1.0/readme.md) | 1.0 | Proposed | [`wyvrn-chat`](../wyvrn-chat) |
+| [`chat-message`](protocols/chat-message/1.0/readme.md) | 1.0 | Proposed | none yet -- draft for [`wyvrn-chat`](../wyvrn-chat) |
+| [`message-reactions`](protocols/message-reactions/1.0/readme.md) | 1.0 | Proposed | none yet -- draft for [`wyvrn-chat`](../wyvrn-chat) |
 | [`multi-device`](protocols/multi-device/1.0/readme.md) | 1.0 | Implemented | [`wyvrn-chat`](../wyvrn-chat) |
 | [`history-sync`](protocols/history-sync/1.0/readme.md) | 1.0 | Implemented | [`wyvrn-chat`](../wyvrn-chat) |
 | [`push-notifications`](protocols/push-notifications/1.0/readme.md) | 1.0 | Proposed | none yet — design proposal (browser PWA build) |

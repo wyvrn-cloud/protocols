@@ -150,6 +150,9 @@ Message Type URI: `https://wyvrn.app/message-reactions/1.0/reactions`
 | `to` | message reference | REQUIRED. The message reacted to (`id` and `author`). |
 | `emoji` | array of string | REQUIRED. The reactor's complete, current set of reactions to that message. Empty means none. |
 
+Schema: [`schemas/reactions.json`](schemas/reactions.json) validates the whole message,
+headers included.
+
 ## Implementations
 
 Name / Link | Implementation Notes

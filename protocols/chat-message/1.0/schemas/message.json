@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "chat-message/1.0/message",
+  "description": "A chat message, optionally a reply to an earlier message in the same conversation.",
+  "type": "object",
+  "required": [
+    "id",
+    "type",
+    "from",
+    "created_time",
+    "body"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Message ID, unique to the sender."
+    },
+    "type": {
+      "const": "https://wyvrn.app/chat-message/1.0/message"
+    },
+    "from": {
+      "type": "string",
+      "pattern": "^did:[a-z0-9]+:[^#]+$",
+      "description": "Sender DID. These messages are always sent authenticated, so it is always present, and it -- not anything in the body -- says who the message is from."
+    },
+    "to": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^did:[a-z0-9]+:[^#]+$"
+      },
+      "description": "Intended recipient DIDs."
+    },
+    "pthid": {
+      "type": "string",
+      "description": "In a group conversation (group-chat/1.0), the group's id. Absent in a one-to-one conversation."
+    },
+    "created_time": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "UTC epoch seconds."
+    },
+    "expires_time": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "UTC epoch seconds."
+    },
+    "lang": {
+      "type": "string",
+      "description": "IANA language tag of `content`. SHOULD be present."
+    },
+    "body": {
+      "type": "object",
+      "required": [
+        "content"
+      ],
+      "properties": {
+        "content": {
+          "type": "string",
+          "description": "The text of the message. May use Markdown."
+        },
+        "reply_to": {
+          "type": "object",
+          "required": [
+            "id",
+            "author"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "minLength": 1,
+              "description": "The id of the message referred to. Compared case-insensitively."
+            },
+            "author": {
+              "type": "string",
+              "pattern": "^did:[a-z0-9]+:[^#]+$",
+              "description": "The DID that sent the message referred to, as the referring party knows it."
+            },
+            "snippet": {
+              "type": "string",
+              "maxLength": 100,
+              "description": "The start of the referred message's text as it read when the reference was made, or a short label (e.g. \"Photo\") for a message with no text. Counted in characters."
+            }
+          },
+          "description": "The message this one answers. A message reference, usually with a snippet."
+        }
+      }
+    }
+  }
+}
