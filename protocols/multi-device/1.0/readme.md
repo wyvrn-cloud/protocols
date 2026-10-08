@@ -156,6 +156,8 @@ through a separate per-device "control" identity.
 | Receive `device-announce` | no-op (not enrolled, nothing to update) | stays in state, roster gains an entry | stays in state, roster gains an entry |
 | Receive `device-revoke` for another device, from a trusted device | no-op | stays in state, roster loses an entry, expects a rotating `device-enroll-response` to follow shortly | same, and may itself perform the rotation if no other trusted device does first |
 | Receive `device-revoke` for *this device's own* Device DID | no-op | this device should stop presenting itself as enrolled — see Security | same |
+| Receive a `device-remint` keeping the sender's `keyAgreement` key, vouched for by an enrolled Device DID | no-op | stays in state, the roster entry moves to the new Device DID | same |
+| Receive a `device-remint` with a new `keyAgreement` key, vouched for by an enrolled Device DID | no-op | no-op (cannot mint a rotation) | mints and sends the rotation listing the new Device DID and key |
 
 ## Basic Walkthrough
 
@@ -461,6 +463,40 @@ needs none — it's initiated directly with steps 1-3, dropping only the
 target's `authentication` entry (its `keyAgreement` entry, and its content
 access, is untouched).
 
+**Replacing a Device DID** (a *remint*). A device may move to a new Device
+DID, with `device-remint` (see Message Reference) telling its siblings, and
+there are two cases, decided by whether its `keyAgreement` key changes:
+
+- **New keys** (a *hard* remint — the device generates a new Device DID and a
+  new `keyAgreement` key). The Identity DID document lists device keys, never
+  Device DIDs, so only the key change makes this a roster change at all, and
+  it is made like any other: a trusted device mints the new document itself
+  with steps 1-3 above, sent from its old Device DID (the one its siblings
+  still know). An untrusted device cannot; it moves to its new Device DID,
+  keeps using its current `keyAgreement` key, and sends `device-remint` to
+  **one** trusted sibling — the one with the lexically lowest Device DID, so
+  that two trusted devices never each mint a different change with the same
+  `rotation_seq` — which performs steps 1-3 for it without asking anyone
+  (it changes nothing but that device's own keys, which that device alone
+  holds). The device switches to its new `keyAgreement` key with the
+  rotation that lists it, and until then sends `device-remint` again on
+  every start.
+- **Same keys** (a *soft* remint — the same keys minted into a new document,
+  e.g. one written by a newer library with a different `accept` order, or
+  through a mediator with a new routing DID; a `did:peer:4` is its whole
+  document, so this gives a new Device DID). The current Identity DID
+  document already lists the device's `keyAgreement` key, so there is
+  nothing to sign or accept: the device sends `device-remint` to **every**
+  sibling, and any device — trusted or not — moves that roster entry to the
+  new Device DID. No rotation is minted, so several siblings handling the
+  same notice cannot produce competing changes. (A trusted device whose
+  *Identity* DID would also come out different under the newer document
+  makes that an ordinary rotation instead.)
+
+In both cases the new Device DID is registered with the mediator before
+anything is sent from it, and the old one's registration is removed once
+nothing will be sent to it.
+
 This needs no new mediator capability beyond what enrollment already
 needs — registering an additional recipient DID under an existing
 mediation relationship is ordinary `coordinate-mediation/3.0`. What it does
@@ -519,7 +555,10 @@ slow rotation loses its entire point.
     signature MUST NOT be accepted in its place. The one message exempt
     from "in the roster" is `device-enroll-request`, which by nature
     comes from a device not yet enrolled, and is authorized by the
-    invitation it answers instead.
+    invitation it answers instead. The other is `device-remint`, which
+    comes from a Device DID nobody has heard of yet by design, and is
+    authorized by its `from_prior`: signed by a Device DID that *is* in
+    the roster (and not revoked), naming the sender as its successor.
 
   The same rule governs every protocol that runs over the Device DID
   channel, [`history-sync/1.0`](../../history-sync/1.0/readme.md)
@@ -551,6 +590,15 @@ slow rotation loses its entire point.
   with every device an identity has ever added or removed. A device
   further behind than its siblings' logs reach cannot be caught up and
   has to be enrolled afresh.
+- **A same-key `device-remint` is the one roster edit no signed roster
+  change makes.** It is safe to apply unsigned because it changes nothing
+  the Identity DID document says — only which Device DID an already-listed
+  key's device is reached at, attested by that device's own previous Device
+  DID — and grants no trust. Its limit: a trusted device that has not yet
+  received the notice and mints a roster change in the meantime lists the
+  old Device DID, and a receiver applying that change moves the entry back.
+  The notice is queued at the mediator for an offline sibling, so this
+  takes a roster change made before the notice is picked up.
 - **An invitation admits one device, once, briefly, and only with a
   person's say-so.** See Basic Walkthrough step 3. An implementation MUST
   NOT enroll a device on receipt of a `device-enroll-request` alone.
@@ -722,11 +770,54 @@ it generated, since it was never going to be listed anywhere.
 |---|---|---|
 | `accepted` | boolean | Whether the promotion was granted. |
 
+### `device-remint`
+
+Sent from a device's **new** Device DID, after it has registered that DID
+with the mediator, to announce that it replaces the device's previous one
+(see Key Rotation: Replacing a Device DID). Sent to every sibling when
+`key_agreement_public` is the device's current `keyAgreement` key (a soft
+remint), and to one trusted sibling — the one with the lexically lowest
+Device DID — when it is a new one (a hard remint by an untrusted device).
+
+| Field | Type | Description |
+|---|---|---|
+| `from_prior` | string | A JWT in the `from_prior` form ([DIDComm Messaging v2.1](https://identity.foundation/didcomm-messaging/spec/v2.1/), EdDSA, `iss`/`sub`/`iat`) whose `iss` is the device's previous Device DID, signed with an `authentication` key that DID's document lists, and whose `sub` is the Device DID the message is sent from. |
+| `key_agreement_public` | string | The `keyAgreement` public key, multikey-encoded, the device is to be listed with in the Identity DID document: its current one (soft remint) or a new one it generated (hard remint). |
+
+A receiver MUST ignore one whose `from_prior` is absent, does not verify,
+does not name the sending Device DID as its `sub`, or whose `iss` is not an
+enrolled, unrevoked device in its roster. Then:
+
+- `key_agreement_public` equals the key the roster lists for that device:
+  the receiver moves that device's roster entry to the new Device DID,
+  keeping everything else about it (name, trust), and treats the previous
+  Device DID as revoked (never re-added, never heard from again).
+- Otherwise: a trusted receiver mints and sends the rotation listing the new
+  Device DID and key in place of the old ones (Key Rotation steps 1-3);
+  any other receiver ignores it.
+
+A receiver whose roster already lists the sending Device DID has applied the
+request before; a trusted one sends that device its latest roster change
+again, for a device that missed it.
+
+```json
+{
+  "type": "https://wyvrn.app/multi-device/1.0/device-remint",
+  "id": "5b0c3e1a-6f2d-4d8e-9a71-3c4f2e8b9d10",
+  "from": "did:peer:4zQmNewDeviceDid...",
+  "to": ["did:peer:4zQmSiblingDeviceDid..."],
+  "body": {
+    "from_prior": "eyJ0eXAiOiJKV1QiLCJhbGciOiJFZERTQSJ9.eyJpc3MiOiJkaWQ6cGVlcjo0elFtT2xkRGV2aWNlRGlkLi4uIiwic3ViIjoiZGlkOnBlZXI6NHpRbU5ld0RldmljZURpZC4uLiIsImlhdCI6MTc5MTQzNDI3Nn0.signature",
+    "key_agreement_public": "z6LSphoneKeyAgreementKey..."
+  }
+}
+```
+
 ## Implementations
 
 Name / Link | Implementation Notes
 --- | ---
-[`wyvrn-chat`](https://github.com/wyvrn-cloud/chat) | `src/handlers/multiDevice/multiDeviceHandler.ts`; who is heard on the Device DID channel is enforced in `src/services/multiDevice/deviceChannelGuard.ts`. Keeps its 16 most recent roster changes for `device-rotation-request`; invitations last 10 minutes.
+[`wyvrn-chat`](https://github.com/wyvrn-cloud/chat) | `src/handlers/multiDevice/multiDeviceHandler.ts`; who is heard on the Device DID channel is enforced in `src/services/multiDevice/deviceChannelGuard.ts`. Keeps its 16 most recent roster changes for `device-rotation-request`; invitations last 10 minutes. Reminting is under Settings → Developer: *soft* and *hard* (`softRemintDeviceDid`/`remintDeviceDid` in `src/worker/agentWorker.ts`). Every start re-sends `recipient-update` for the device's own Device DID, and for the Identity DID only while its document lists that device's key alone — a revoked device is never told it was revoked, and re-adding a shared Identity DID would undo the removal its revoking sibling made.
 
 ## Endnotes
 
