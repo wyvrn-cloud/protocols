@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "chat-message/1.0/message-delete",
+  "description": "Asks every receiver to remove the content of the sender's own earlier message and show it as deleted.",
+  "type": "object",
+  "required": [
+    "id",
+    "type",
+    "from",
+    "created_time",
+    "body"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Message ID, unique to the sender; the same id goes to every member of a group."
+    },
+    "type": {
+      "const": "https://wyvrn.app/chat-message/1.0/message-delete"
+    },
+    "from": {
+      "type": "string",
+      "pattern": "^did:[a-z0-9]+:[^#]+$",
+      "description": "Sender DID. Always present: these messages are sent authenticated, and the envelope, not the body, says who sent them."
+    },
+    "to": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^did:[a-z0-9]+:[^#]+$"
+      }
+    },
+    "pthid": {
+      "type": "string",
+      "description": "In a group conversation, the group's id. Absent in a pair."
+    },
+    "thid": {
+      "type": "string",
+      "description": "In a thread (chat-threads/1.0), the thread's id. Otherwise absent."
+    },
+    "created_time": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "UTC epoch seconds."
+    },
+    "expires_time": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "UTC epoch seconds; set under a disappearing-messages/1.0 timer."
+    },
+    "lang": {
+      "type": "string",
+      "description": "IANA language tag of content."
+    },
+    "body": {
+      "type": "object",
+      "required": [
+        "target"
+      ],
+      "properties": {
+        "target": {
+          "type": "object",
+          "required": [
+            "id",
+            "author"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "minLength": 1,
+              "description": "The id of the message referred to. Compared case-insensitively."
+            },
+            "author": {
+              "type": "string",
+              "pattern": "^did:[a-z0-9]+:[^#]+$",
+              "description": "The DID that sent it, as the referring party knows it (its current DID or one it rotated away from)."
+            }
+          },
+          "description": "The message deleted."
+        }
+      }
+    }
+  }
+}
