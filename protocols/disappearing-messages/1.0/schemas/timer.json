@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "disappearing-messages/1.0/timer",
+  "description": "Sets or clears the conversation's disappearing-message timer. Messages sent afterwards carry expires_time = created_time + seconds; messages already sent are unaffected.",
+  "type": "object",
+  "required": [
+    "id",
+    "type",
+    "from",
+    "created_time",
+    "body"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Message ID, unique to the sender; the same id goes to every member of a group."
+    },
+    "type": {
+      "const": "https://wyvrn.app/disappearing-messages/1.0/timer"
+    },
+    "from": {
+      "type": "string",
+      "pattern": "^did:[a-z0-9]+:[^#]+$",
+      "description": "Sender DID. Always present: these messages are sent authenticated, and the envelope, not the body, says who sent them."
+    },
+    "to": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^did:[a-z0-9]+:[^#]+$"
+      }
+    },
+    "pthid": {
+      "type": "string",
+      "description": "In a group conversation, the group's id. Absent in a pair."
+    },
+    "created_time": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "UTC epoch seconds. Of the timers set for one conversation, the one with the latest value stands; on a tie, the shorter."
+    },
+    "body": {
+      "type": "object",
+      "required": [
+        "seconds"
+      ],
+      "properties": {
+        "seconds": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "description": "A positive integer: messages sent from now on are removed this many seconds after they are sent. 0 or null: the timer is cleared."
+        }
+      }
+    }
+  }
+}
