@@ -1,0 +1,77 @@
+# The protocol registry site: https://wyvrn-cloud.github.io/protocols/
+#
+# Content is generated from the repo's own readmes by scripts/build_site.py (run it
+# before `hugo`); nothing under site/content/ is committed. Protocol pages live at
+# /<name>/<version>/ so that the site's paths mirror the PIURIs
+# (https://wyvrn.app/<name>/<version>): pointing wyvrn.app at this site would make
+# every PIURI resolve to its own specification.
+baseURL: https://wyvrn-cloud.github.io/protocols/
+title: wyvrn protocols
+enableRobotsTXT: true
+enableGitInfo: false
+
+module:
+  imports:
+    - path: github.com/imfing/hextra
+
+markup:
+  goldmark:
+    renderer:
+      unsafe: false
+    parser:
+      attribute:
+        block: true
+  highlight:
+    noClasses: false
+  tableOfContents:
+    startLevel: 2
+    endLevel: 3
+
+menu:
+  main:
+    - name: Protocols
+      pageRef: /
+      weight: 1
+    - name: Discussions
+      pageRef: /discussions
+      weight: 2
+    - name: didcomm.org
+      url: https://didcomm.org/
+      weight: 3
+    - name: Search
+      weight: 4
+      params:
+        type: search
+    - name: GitHub
+      weight: 5
+      url: https://github.com/wyvrn-cloud/protocols
+      params:
+        icon: github
+
+params:
+  description: DIDComm protocols authored by the wyvrn ecosystem, in the didcomm.org registry's own format.
+  navbar:
+    displayTitle: true
+    displayLogo: false
+  page:
+    width: wide
+  theme:
+    default: system
+    displayToggle: true
+  footer:
+    displayCopyright: false
+    displayPoweredBy: false
+  search:
+    enable: true
+    type: flexsearch
+    flexsearch:
+      index: content
+      tokenize: forward
+  editURL:
+    enable: false
+  toc:
+    displayTags: false
+  highlight:
+    copy:
+      enable: true
+      display: hover

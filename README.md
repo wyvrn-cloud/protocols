@@ -6,6 +6,10 @@ A staging ground for DIDComm protocols authored by the `wyvrn` ecosystem
 that aren't covered by an existing protocol in the real
 [didcomm.org](https://didcomm.org) registry.
 
+Browse it at **<https://wyvrn-cloud.github.io/protocols/>** -- every protocol, with
+search and its schemas served beside it, built from these files by `site/` (see
+[`site/README.md`](site/README.md)).
+
 ## Why this repo exists
 
 Before writing a custom protocol for something a `wyvrn-*` app needs, check
