@@ -125,11 +125,26 @@ afresh.
 
 ### One name per holder
 
-A host MUST refuse to publish a document any of whose keys is in a document
-it hosts under another name. This is what "one DID per holder" comes to: a
-holder is known by its keys. It does not stop someone making new keys to take
-a second name. It does make each name cost a new identity, and it stops one
-identity from collecting names.
+A holder is known by its keys, and has one name. A host MUST refuse to hold a
+name for, or publish a document under a name with, a key that has been **shown
+to be** the holder's of a DID under another name.
+
+- **Shown to be, not merely listed.** A document can list any public key,
+  including someone else's. Listing shows nothing, and MUST NOT use that key
+  up: its real owner can still claim a name. A key is shown to be a name's
+  holder's when its owner acts as that holder with it -- a `publish` or
+  `publish-whois` for the name authenticated with it or signed by it, or a
+  `status-request` that names it -- while the name's document lists it. That
+  takes both the holder's word (the document) and the key owner's (the
+  message).
+- **In any version.** A host remembers every key any version of a hosted log
+  has had, for as long as the name is hosted. A device taken out of a document
+  was still that holder's: its key cannot go and claim a second name.
+
+So a new device of a holder's SHOULD ask after the DID by name once
+(`status-request`), which is what makes it count. This does not stop someone
+making new keys to take a second name. It makes each name cost a new identity,
+and stops one identity collecting names by adding and removing devices.
 
 ## States
 
@@ -216,14 +231,17 @@ again for every `publish`, against the whole log as it would then stand.
    `did:webvh:<SCID>:<host>:<name>` for the name asked for.
 4. **It names its other self.** The document's `alsoKnownAs` includes
    `did:web:<host>:<name>`.
-5. **The sender holds its keys.** The key the message was authenticated with
-   is a `keyAgreement` key of the resulting document, and the attachment
-   carrying the log is signed (`jws`) by one of its `authentication` keys.
-   For a name already `published` both keys MUST also be in the document as
-   it stood before, or be an active update key of it: a stranger cannot
-   append, even an entry that would be valid.
-6. **Its keys are nobody else's.** No key of the resulting document is in a
-   document hosted under another name.
+5. **The sender is the document's.** The key the message was authenticated
+   with is a `keyAgreement` key of the resulting document, and the attachment
+   carrying the log is signed (`jws`) by one of its `authentication` keys. It
+   is that one key that matters: what else the sender's DID lists (a device the
+   document doesn't have yet, or fewer than it has) is neither here nor there,
+   so any of a holder's devices can publish. For a name already `published`
+   the sender's key MAY instead be one the document had before this entry: an
+   entry that removes the device that sends it is still the holder's.
+6. **Its keys are nobody else's.** No key of the resulting document, and
+   neither of the two the sender used, has been shown to be the holder's of a
+   DID under another name (see [One name per holder](#one-name-per-holder)).
 7. **The name may be claimed by this sender.** For a first publication: the
    name is `held` for this sender. For a reserved name, that hold is given
    only to the assigned holder.
@@ -236,11 +254,24 @@ A host MAY refuse a log, or a whois, over a size it states in its
 
 ### Who a sender is
 
-A hold, and an assignment, are to a DID. A holder's `did:peer:4` changes
+By the key it wrote with, not by its DID. A holder's `did:peer:4` changes
 between reserving and publishing (step 2 above), and again with every device
-it adds. So a host matches a sender to a hold or an assignment **by key**:
-the sender is that party if the key it authenticated with is a
-`keyAgreement` key of the DID the hold or assignment names.
+it adds; and a `did:peer:4` is whatever its maker put in it, so one can be made
+that lists someone else's public key beside its maker's own. Neither matters
+to a host that looks only at the key a message was authenticated with:
+
+- A **hold** is for the key that asked for it. The `publish` that follows has
+  to be authenticated with the same key.
+- An **assignment** is to a DID. The assigned holder is whoever writes with a
+  `keyAgreement` key of that DID.
+- The **holder** of a published DID is whoever writes with a `keyAgreement` key
+  of its document.
+
+A host that cannot tell which key a message was authenticated with (it
+received it already opened, from a mediator) knows only that the sender holds
+*one* of its DID's keys. It MUST then require *every* `keyAgreement` key of
+the sender's DID to be the party's, and MUST NOT count any of them as shown
+to be a holder's.
 
 ### Two devices at once
 
@@ -715,7 +746,7 @@ message, its `pthid` the id of the message it refuses.
 
 | Name / Link | Implementation Notes |
 |---|---|
-| [wyvrn-did-host](https://github.com/wyvrn-cloud/services/tree/master/services/did-host) | The host, and in [`wyvrn-hosted-did`](https://github.com/wyvrn-cloud/services/tree/master/crates/wyvrn-hosted-did) resolving and the whois profile, as a library with the fetching left out. Knows a sender by its DID rather than by the key it used: it requires every key-agreement key of the sender's DID to be the document's, which comes to the same. No holder (app) side yet. |
+| [wyvrn-did-host](https://github.com/wyvrn-cloud/services/tree/master/services/did-host) | The host, and in [`wyvrn-hosted-did`](https://github.com/wyvrn-cloud/services/tree/master/crates/wyvrn-hosted-did) resolving and the whois profile, as a library with the fetching left out. No holder (app) side yet. |
 
 ## Endnotes
 
