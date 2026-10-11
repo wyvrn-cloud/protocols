@@ -87,9 +87,11 @@ sender.
   and act on none of it. There is nobody to send a `problem-report` to; over
   HTTP the refusal is the response's status (403).
 - A host MUST know *which* of the sender's keys authenticated a message, since
-  that key is who the sender is ([Who a sender is](#who-a-sender-is)). So a
-  host is written to directly. It is not reached through a mediator, which
-  hands a message over already opened.
+  that key is who the sender is ([Who a sender is](#who-a-sender-is)). That is
+  so however the message arrived. A host MAY be reached through a mediator: a
+  mediator carries the message the sender sealed, and it is the host that
+  opens it, so it is authenticated by the sender's key as much as one sent
+  straight to the host. One that turns out not to be is dropped.
 - Every attachment MUST be signed: `data.jws`, a detached signature over the
   attachment's bytes by an `authentication` key of the DID it is for. What is
   uploaded is then the DID's own on the outside as well as (a log's proofs, a
