@@ -89,12 +89,37 @@
           "data": {
             "type": "object",
             "required": [
-              "base64"
+              "base64",
+              "jws"
             ],
             "properties": {
               "base64": {
                 "type": "string",
                 "description": "The bytes, base64url."
+              },
+              "jws": {
+                "type": "object",
+                "description": "A detached JWS over the attachment's bytes, by an authentication key of the hosted document.",
+                "required": [
+                  "protected",
+                  "signature"
+                ],
+                "properties": {
+                  "protected": {
+                    "type": "string"
+                  },
+                  "signature": {
+                    "type": "string"
+                  },
+                  "header": {
+                    "type": "object",
+                    "properties": {
+                      "kid": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
               }
             }
           }

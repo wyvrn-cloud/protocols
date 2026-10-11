@@ -77,8 +77,24 @@ endpoint of its own to put a `did:web` at.
 
 ## Connectivity
 
-Every message is between one agent and the host. The host MUST act only on
-messages whose sender is authenticated (authcrypt), and answers the sender.
+Every message is between one agent and the host, and the host answers the
+sender.
+
+**A host always knows who is writing, down to the key.**
+
+- Every message MUST be authenticated by its sender (authcrypt). A host MUST
+  refuse one that is not -- anoncrypt, or signed but anonymously encrypted --
+  and act on none of it. There is nobody to send a `problem-report` to; over
+  HTTP the refusal is the response's status (403).
+- A host MUST know *which* of the sender's keys authenticated a message, since
+  that key is who the sender is ([Who a sender is](#who-a-sender-is)). So a
+  host is written to directly. It is not reached through a mediator, which
+  hands a message over already opened.
+- Every attachment MUST be signed: `data.jws`, a detached signature over the
+  attachment's bytes by an `authentication` key of the DID it is for. What is
+  uploaded is then the DID's own on the outside as well as (a log's proofs, a
+  presentation's proof) on the inside, and a host MUST refuse an attachment
+  that is not.
 
 Reading a hosted DID is not part of this protocol: that is DID resolution,
 over HTTPS, by anyone.
@@ -266,12 +282,6 @@ to a host that looks only at the key a message was authenticated with:
   `keyAgreement` key of that DID.
 - The **holder** of a published DID is whoever writes with a `keyAgreement` key
   of its document.
-
-A host that cannot tell which key a message was authenticated with (it
-received it already opened, from a mediator) knows only that the sender holds
-*one* of its DID's keys. It MUST then require *every* `keyAgreement` key of
-the sender's DID to be the party's, and MUST NOT count any of them as shown
-to be a holder's.
 
 ### Two devices at once
 
@@ -602,10 +612,12 @@ Holder to host. Sets, or with no attachment removes, the DID's `whois.vp`.
 |---|---|---|
 | `name` | string | The name. |
 
-One attachment, `id` `whois`, `media_type` `application/vp`, `data.base64`.
-The host MUST check that the presentation's `holder` is the hosted DID, that
-its proof verifies against the hosted document, and that every credential in
-it is about the hosted DID. It answers `status`.
+One attachment, `id` `whois`, `media_type` `application/vp`. Its `data` has
+`base64` and `jws`, a detached signature over the attachment's bytes by an
+`authentication` key of the hosted document. The host MUST check that
+signature, that the presentation's `holder` is the hosted DID, that its proof
+verifies against the hosted document, and that every credential in it is about
+the hosted DID. It answers `status`.
 
 ```json
 {
@@ -619,7 +631,11 @@ it is about the hosted DID. It answers `status`.
       "id": "whois",
       "media_type": "application/vp",
       "data": {
-        "base64": "eyJAY29udGV4dCI6Wy4uLl19"
+        "base64": "eyJAY29udGV4dCI6Wy4uLl19",
+        "jws": {
+          "protected": "eyJhbGciOiJFZERTQSIsImtpZCI6IiNrZXktMSJ9",
+          "signature": "c2lnbmF0dXJl"
+        }
       }
     }
   ]
@@ -738,7 +754,7 @@ message, its `pthid` the id of the message it refuses.
 | `e.p.msg.log-invalid` | The log, or the document it gives, fails a check in "What a host checks before publishing". `comment` says which. |
 | `e.p.msg.conflict` | `after` is not the last hosted entry. `args` carries its `versionId`. |
 | `e.p.msg.key-in-use` | A key of the document is in a document hosted under another name. |
-| `e.p.msg.whois-invalid` | The presentation fails a check. |
+| `e.p.msg.whois-invalid` | The presentation fails a check, or its attachment is not signed by the DID. |
 | `e.p.msg.too-large` | Over a limit. `args` carries the limit, in bytes. |
 | `e.p.msg.not-admin` | `assign` or `free` from a DID that is not an admin. |
 
