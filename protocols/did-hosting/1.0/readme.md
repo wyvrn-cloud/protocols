@@ -764,7 +764,8 @@ message, its `pthid` the id of the message it refuses.
 
 | Name / Link | Implementation Notes |
 |---|---|
-| [wyvrn-did-host](https://github.com/wyvrn-cloud/services/tree/master/services/did-host) | The host, and in [`wyvrn-hosted-did`](https://github.com/wyvrn-cloud/services/tree/master/crates/wyvrn-hosted-did) resolving and the whois profile, as a library with the fetching left out. No holder (app) side yet. |
+| [wyvrn-did-host](https://github.com/wyvrn-cloud/services/tree/master/services/did-host) | The host, and in [`wyvrn-hosted-did`](https://github.com/wyvrn-cloud/services/tree/master/crates/wyvrn-hosted-did) resolving and the whois profile, as a library with the fetching left out. |
+| [wyvrn-chat](https://github.com/wyvrn-cloud/chat) | The holder: registers a name from Settings, keeps the address's document in step with its Identity DID, publishes its profile as the whois. And the reader: looks an address up before adding it as a contact. Only the device that registered an address holds an update key for it. |
 
 ## Endnotes
 
