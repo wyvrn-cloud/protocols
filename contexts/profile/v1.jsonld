@@ -1,0 +1,28 @@
+{
+  "@context": {
+    "@version": 1.1,
+    "@protected": true,
+
+    "schema": "https://schema.org/",
+
+    "ProfileCredential": "https://wyvrn.app/ns/profile/v1#ProfileCredential",
+
+    "Person": "schema:Person",
+    "Organization": "schema:Organization",
+    "Brand": "schema:Brand",
+    "ImageObject": "schema:ImageObject",
+
+    "image": { "@id": "schema:image" },
+    "brand": { "@id": "schema:brand" },
+    "logo": { "@id": "schema:logo" },
+
+    "contentUrl": { "@id": "schema:contentUrl", "@type": "@id" },
+    "encodingFormat": { "@id": "schema:encodingFormat" },
+    "width": { "@id": "schema:width", "@type": "http://www.w3.org/2001/XMLSchema#integer" },
+    "height": { "@id": "schema:height", "@type": "http://www.w3.org/2001/XMLSchema#integer" },
+    "sha256": { "@id": "schema:sha256" },
+
+    "wyvrn": "@nest",
+    "background": { "@id": "https://wyvrn.app/ns/profile/v1#background", "@nest": "wyvrn" }
+  }
+}
