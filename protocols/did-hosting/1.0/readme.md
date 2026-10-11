@@ -713,7 +713,7 @@ message, its `pthid` the id of the message it refuses.
 
 | Name / Link | Implementation Notes |
 |---|---|
-| | None yet. |
+| [wyvrn-did-host](https://github.com/wyvrn-cloud/services/tree/master/services/did-host) | The host. Knows a sender by its DID rather than by the key it used: it requires every key-agreement key of the sender's DID to be the document's, which comes to the same. No holder (app) side yet. |
 
 ## Endnotes
 

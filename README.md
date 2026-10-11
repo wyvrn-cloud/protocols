@@ -72,7 +72,7 @@ implementing it would move to the real `didcomm.org` PIURI.
 | Protocol | Version | Status | Used by |
 |---|---|---|---|
 | [`group-chat`](protocols/group-chat/1.0/readme.md) | 1.0 | Proposed | [`wyvrn-chat`](../wyvrn-chat) |
-| [`did-hosting`](protocols/did-hosting/1.0/readme.md) | 1.0 | Proposed | none yet (design, with schemas; its profile credential's context is in [`contexts/`](contexts/README.md)) |
+| [`did-hosting`](protocols/did-hosting/1.0/readme.md) | 1.0 | Proposed | [`wyvrn-services`](../wyvrn-services) (`services/did-host`, the host side; no app side yet). Its profile credential's context is in [`contexts/`](contexts/README.md) |
 | [`multi-device`](protocols/multi-device/1.0/readme.md) | 1.0 | Implemented | [`wyvrn-chat`](../wyvrn-chat) |
 | [`history-sync`](protocols/history-sync/1.0/readme.md) | 1.0 | Implemented | [`wyvrn-chat`](../wyvrn-chat) |
 | [`push-notifications`](protocols/push-notifications/1.0/readme.md) | 1.0 | Proposed | none yet — design proposal (browser PWA build) |
