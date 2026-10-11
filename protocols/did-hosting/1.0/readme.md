@@ -444,7 +444,9 @@ beside it, always. More than that needs one of:
 
 ## Message Reference
 
-All messages use the type prefix `https://wyvrn.app/did-hosting/1.0/`.
+All messages use the type prefix `https://wyvrn.app/did-hosting/1.0/`. Each has
+a JSON Schema under [`schemas/`](schemas), which the examples here are checked
+against.
 
 ### `reserve`
 
@@ -456,6 +458,16 @@ Holder to host. Asks for a name to be held.
 
 The host answers with `reservation`, or a `problem-report`. A sender has at
 most one hold; a new `reserve` replaces it.
+
+```json
+{
+  "id": "7c1f0a52-0d2e-4a3b-9a57-5a8d4f1c2e10",
+  "type": "https://wyvrn.app/did-hosting/1.0/reserve",
+  "body": {
+    "name": "alice"
+  }
+}
+```
 
 ### `reservation`
 
@@ -470,6 +482,20 @@ Host to holder.
 
 The `did:webvh` is not here: it does not exist until the holder has written
 the log.
+
+```json
+{
+  "id": "b0a6f6b1-34c7-4d0e-8f43-0d7a1f0e9c11",
+  "type": "https://wyvrn.app/did-hosting/1.0/reservation",
+  "thid": "7c1f0a52-0d2e-4a3b-9a57-5a8d4f1c2e10",
+  "body": {
+    "name": "alice",
+    "host": "id.example",
+    "did_web": "did:web:id.example:alice",
+    "expires_time": 1791727200
+  }
+}
+```
 
 ### `publish`
 
@@ -487,6 +513,29 @@ log. Its `data` has `base64` and `jws`: a detached signature over the
 attachment's bytes by an `authentication` key of the document the newest
 entry gives.
 
+```json
+{
+  "id": "2f9d7a43-6f1b-4a8e-b0b3-91f3f6f0a212",
+  "type": "https://wyvrn.app/did-hosting/1.0/publish",
+  "body": {
+    "name": "alice"
+  },
+  "attachments": [
+    {
+      "id": "log",
+      "media_type": "text/jsonl",
+      "data": {
+        "base64": "eyJ2ZXJzaW9uSWQiOiIxLVFtLi4uIn0K",
+        "jws": {
+          "protected": "eyJhbGciOiJFZERTQSIsImtpZCI6IiNrZXktMSJ9",
+          "signature": "c2lnbmF0dXJl"
+        }
+      }
+    }
+  ]
+}
+```
+
 ### `published`
 
 Host to holder.
@@ -497,6 +546,20 @@ Host to holder.
 | `did` | string | The hosted `did:webvh`. |
 | `did_web` | string | Its parallel `did:web`. |
 | `version_id` | string | The `versionId` of the last entry now hosted. |
+
+```json
+{
+  "id": "5d0c8e7a-93b2-4a70-8f0e-63a0f4d2b313",
+  "type": "https://wyvrn.app/did-hosting/1.0/published",
+  "thid": "2f9d7a43-6f1b-4a8e-b0b3-91f3f6f0a212",
+  "body": {
+    "name": "alice",
+    "did": "did:webvh:QmfGEUAcMpzo25kF2Rhn8L5FAXysfGnkzjwdKoNPi615XQ:id.example:alice",
+    "did_web": "did:web:id.example:alice",
+    "version_id": "1-QmQq6Kg4ZZ1p49znzxnWmes4LkkWgMWLrnrfPre8UD56bz"
+  }
+}
+```
 
 ### `publish-whois`
 
@@ -511,6 +574,25 @@ The host MUST check that the presentation's `holder` is the hosted DID, that
 its proof verifies against the hosted document, and that every credential in
 it is about the hosted DID. It answers `status`.
 
+```json
+{
+  "id": "a8e3c1d9-0b5f-4c2a-9d6e-7b1f2c3d4e14",
+  "type": "https://wyvrn.app/did-hosting/1.0/publish-whois",
+  "body": {
+    "name": "alice"
+  },
+  "attachments": [
+    {
+      "id": "whois",
+      "media_type": "application/vp",
+      "data": {
+        "base64": "eyJAY29udGV4dCI6Wy4uLl19"
+      }
+    }
+  ]
+}
+```
+
 ### `status-request`
 
 Anyone to host.
@@ -518,6 +600,16 @@ Anyone to host.
 | Field | Type | Description |
 |---|---|---|
 | `name` | string | Optional. Absent, the host answers for the name the sender holds, if any. |
+
+```json
+{
+  "id": "c4b7a2e1-5d6f-4e3b-8a9c-0d1e2f3a4b15",
+  "type": "https://wyvrn.app/did-hosting/1.0/status-request",
+  "body": {
+    "name": "alice"
+  }
+}
+```
 
 ### `status`
 
@@ -535,6 +627,22 @@ Host to anyone.
 A host MUST NOT say to anyone but an admin who a reserved name is assigned
 to, or who holds a hold.
 
+```json
+{
+  "id": "e6d5c4b3-a291-4807-b6c5-d4e3f2a1b016",
+  "type": "https://wyvrn.app/did-hosting/1.0/status",
+  "thid": "c4b7a2e1-5d6f-4e3b-8a9c-0d1e2f3a4b15",
+  "body": {
+    "name": "alice",
+    "state": "published",
+    "did": "did:webvh:QmfGEUAcMpzo25kF2Rhn8L5FAXysfGnkzjwdKoNPi615XQ:id.example:alice",
+    "version_id": "1-QmQq6Kg4ZZ1p49znzxnWmes4LkkWgMWLrnrfPre8UD56bz",
+    "whois": true,
+    "yours": false
+  }
+}
+```
+
 ### `assign`
 
 Admin to host. Says who may claim a reserved name, or reserves a free one.
@@ -546,6 +654,17 @@ Admin to host. Says who may claim a reserved name, or reserves a free one.
 
 Refused for a name that is `published`, `stale` or `deactivated`: `free` it
 first. The host answers `status`.
+
+```json
+{
+  "id": "f1e2d3c4-b5a6-4978-8695-a4b3c2d1e017",
+  "type": "https://wyvrn.app/did-hosting/1.0/assign",
+  "body": {
+    "name": "official:announcements",
+    "holder": "did:peer:4zQmd8CpeFPci817KDsbSAKWcXAE2mjvCQSasRewvbSF54Bd"
+  }
+}
+```
 
 ### `free`
 
@@ -559,6 +678,17 @@ the name claimable again: `free`, or `reserved` if it is on the host's list.
 
 The host stops serving the log, the `did.json` and the whois. It answers
 `status`.
+
+```json
+{
+  "id": "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c18",
+  "type": "https://wyvrn.app/did-hosting/1.0/free",
+  "body": {
+    "name": "alice",
+    "comment": "Holder unreachable since 2025-10."
+  }
+}
+```
 
 ### `problem-report`
 

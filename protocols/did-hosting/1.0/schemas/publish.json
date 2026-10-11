@@ -1,0 +1,137 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "did-hosting/1.0/publish",
+  "description": "Holder to host: publishes a DID under a held name, or appends to one already published.",
+  "type": "object",
+  "required": [
+    "id",
+    "type",
+    "body",
+    "attachments"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Message ID, unique to the sender."
+    },
+    "type": {
+      "const": "https://wyvrn.app/did-hosting/1.0/publish"
+    },
+    "from": {
+      "type": "string",
+      "pattern": "^did:[a-z0-9]+:[^#]+$",
+      "description": "Sender DID. Every message of this protocol is authcrypted, so it is always present."
+    },
+    "to": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^did:[a-z0-9]+:[^#]+$"
+      },
+      "description": "Intended recipient DIDs."
+    },
+    "thid": {
+      "type": "string",
+      "description": "Thread id; the id of the message that started the thread."
+    },
+    "pthid": {
+      "type": "string",
+      "description": "Parent thread id."
+    },
+    "created_time": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "UTC epoch seconds."
+    },
+    "expires_time": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "UTC epoch seconds."
+    },
+    "return_route": {
+      "enum": [
+        "none",
+        "all",
+        "thread"
+      ],
+      "description": "return_route extension; set to all to receive the reply on the same connection."
+    },
+    "body": {
+      "type": "object",
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9]|-(?=[a-z0-9])){1,30}[a-z0-9](?::[a-z0-9](?:[a-z0-9]|-(?=[a-z0-9])){1,30}[a-z0-9])*$",
+          "description": "A name: labels of 3 to 32 characters (a-z, 0-9, -; no leading, trailing or doubled hyphen) joined by ':'."
+        },
+        "after": {
+          "type": "string",
+          "description": "The versionId of the hosted entry that the attached entries follow. Absent for a first publication."
+        }
+      }
+    },
+    "attachments": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "media_type",
+          "data"
+        ],
+        "properties": {
+          "id": {
+            "const": "log"
+          },
+          "media_type": {
+            "const": "text/jsonl"
+          },
+          "data": {
+            "type": "object",
+            "required": [
+              "base64",
+              "jws"
+            ],
+            "properties": {
+              "base64": {
+                "type": "string",
+                "description": "The bytes, base64url."
+              },
+              "jws": {
+                "type": "object",
+                "description": "A detached JWS over the attachment's bytes, by an authentication key of the document the newest entry gives.",
+                "required": [
+                  "protected",
+                  "signature"
+                ],
+                "properties": {
+                  "protected": {
+                    "type": "string"
+                  },
+                  "signature": {
+                    "type": "string"
+                  },
+                  "header": {
+                    "type": "object",
+                    "properties": {
+                      "kid": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "description": "The log entries being added, one per line, oldest first."
+    }
+  }
+}

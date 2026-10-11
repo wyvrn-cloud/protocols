@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "did-hosting/1.0/status-request",
+  "description": "Anyone to host: asks about a name, or about the name the sender holds.",
+  "type": "object",
+  "required": [
+    "id",
+    "type",
+    "body"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Message ID, unique to the sender."
+    },
+    "type": {
+      "const": "https://wyvrn.app/did-hosting/1.0/status-request"
+    },
+    "from": {
+      "type": "string",
+      "pattern": "^did:[a-z0-9]+:[^#]+$",
+      "description": "Sender DID. Every message of this protocol is authcrypted, so it is always present."
+    },
+    "to": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^did:[a-z0-9]+:[^#]+$"
+      },
+      "description": "Intended recipient DIDs."
+    },
+    "thid": {
+      "type": "string",
+      "description": "Thread id; the id of the message that started the thread."
+    },
+    "pthid": {
+      "type": "string",
+      "description": "Parent thread id."
+    },
+    "created_time": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "UTC epoch seconds."
+    },
+    "expires_time": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "UTC epoch seconds."
+    },
+    "return_route": {
+      "enum": [
+        "none",
+        "all",
+        "thread"
+      ],
+      "description": "return_route extension; set to all to receive the reply on the same connection."
+    },
+    "body": {
+      "type": "object",
+      "required": [],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9]|-(?=[a-z0-9])){1,30}[a-z0-9](?::[a-z0-9](?:[a-z0-9]|-(?=[a-z0-9])){1,30}[a-z0-9])*$",
+          "description": "A name: labels of 3 to 32 characters (a-z, 0-9, -; no leading, trailing or doubled hyphen) joined by ':'."
+        }
+      }
+    }
+  }
+}

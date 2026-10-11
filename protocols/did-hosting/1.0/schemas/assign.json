@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "did-hosting/1.0/assign",
+  "description": "Admin to host: says who may claim a reserved name, or reserves a free one.",
+  "type": "object",
+  "required": [
+    "id",
+    "type",
+    "body"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Message ID, unique to the sender."
+    },
+    "type": {
+      "const": "https://wyvrn.app/did-hosting/1.0/assign"
+    },
+    "from": {
+      "type": "string",
+      "pattern": "^did:[a-z0-9]+:[^#]+$",
+      "description": "Sender DID. Every message of this protocol is authcrypted, so it is always present."
+    },
+    "to": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^did:[a-z0-9]+:[^#]+$"
+      },
+      "description": "Intended recipient DIDs."
+    },
+    "thid": {
+      "type": "string",
+      "description": "Thread id; the id of the message that started the thread."
+    },
+    "pthid": {
+      "type": "string",
+      "description": "Parent thread id."
+    },
+    "created_time": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "UTC epoch seconds."
+    },
+    "expires_time": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "UTC epoch seconds."
+    },
+    "return_route": {
+      "enum": [
+        "none",
+        "all",
+        "thread"
+      ],
+      "description": "return_route extension; set to all to receive the reply on the same connection."
+    },
+    "body": {
+      "type": "object",
+      "required": [
+        "name",
+        "holder"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9]|-(?=[a-z0-9])){1,30}[a-z0-9](?::[a-z0-9](?:[a-z0-9]|-(?=[a-z0-9])){1,30}[a-z0-9])*(?::\\*)?$",
+          "description": "A name, or a namespace followed by ':*'."
+        },
+        "holder": {
+          "oneOf": [
+            {
+              "type": "string",
+              "pattern": "^did:[a-z0-9]+:[^#]+$"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The DID that may claim it; null reserves it for nobody."
+        }
+      }
+    }
+  }
+}
