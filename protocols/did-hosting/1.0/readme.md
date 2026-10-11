@@ -378,8 +378,10 @@ adds the same service explicitly to the parallel `did:web`, as the
 `did:webvh` specification says to.
 
 The presentation's `holder` is the hosted DID and it is signed by one of the
-DID's `authentication` keys. An app MUST verify that, and MUST ignore any
-credential in it whose `credentialSubject.id` is not the hosted DID.
+DID's `authentication` keys, with a proof whose purpose is `authentication`.
+As `did:webvh` requires, at least one credential in it has the hosted DID as
+its `credentialSubject.id`. An app MUST verify all of that, and MUST ignore
+any credential in it whose `credentialSubject.id` is not the hosted DID.
 
 ### The profile credential
 
@@ -480,12 +482,97 @@ beside it, always. More than that needs one of:
   the holder's. Checking contacts the domain, so an app SHOULD do it when
   asked rather than unasked; it SHOULD remember the result, with when it was
   checked, and check again when the DID's document changes or after a period
-  of its choosing.
+  of its choosing. See [Linking a domain](#linking-a-domain).
 - **A namespace the app knows.** An app MAY treat a namespace at a host it
   knows as a mark by itself: wyvrn's apps mark names under
   `id.wyvrn.app:official`, which that host reserves whole. A DID marked this
   way SHOULD have a linked domain as well, so that the mark does not rest on
   one check.
+
+### Linking a domain
+
+This is [Well Known DID Configuration](https://identity.foundation/well-known-did-configuration/),
+used as that specification gives it. What follows is which of its choices a
+holder and an app make here. The host has no part in it: the service is one
+more entry in a document it already checks and serves, and the file is on the
+holder's own website.
+
+**The holder's document** names the origin in a service:
+
+```json
+{
+  "id": "did:webvh:QmfGEUAc...:id.example:alice#linked-domains",
+  "type": "LinkedDomains",
+  "serviceEndpoint": "https://alice.example"
+}
+```
+
+For more than one origin, `serviceEndpoint` is `{"origins": [...]}`. An origin
+is HTTPS, with no path. The document lists under `assertionMethod` the keys a
+Domain Linkage Credential may be signed with; a holder SHOULD list there the
+same keys as under `authentication`, one for each trusted device.
+
+**The origin** serves, at `/.well-known/did-configuration.json`:
+
+```json
+{
+  "@context": "https://identity.foundation/.well-known/did-configuration/v1",
+  "linked_dids": [
+    {
+      "@context": [
+        "https://www.w3.org/2018/credentials/v1",
+        "https://identity.foundation/.well-known/did-configuration/v1"
+      ],
+      "issuer": "did:webvh:QmfGEUAc...:id.example:alice",
+      "issuanceDate": "2026-10-11T18:31:40Z",
+      "expirationDate": "2031-10-11T18:31:40Z",
+      "type": ["VerifiableCredential", "DomainLinkageCredential"],
+      "credentialSubject": {
+        "id": "did:webvh:QmfGEUAc...:id.example:alice",
+        "origin": "https://alice.example"
+      },
+      "proof": {
+        "type": "DataIntegrityProof",
+        "cryptosuite": "eddsa-jcs-2022",
+        "@context": [
+          "https://www.w3.org/2018/credentials/v1",
+          "https://identity.foundation/.well-known/did-configuration/v1"
+        ],
+        "created": "2026-10-11T18:31:40Z",
+        "verificationMethod": "did:webvh:QmfGEUAc...:id.example:alice#key-1",
+        "proofPurpose": "assertionMethod",
+        "proofValue": "z45S7hk3..."
+      }
+    }
+  ]
+}
+```
+
+A holder SHOULD include one credential for the `did:webvh` and one for the
+parallel `did:web`, so that the link holds for someone who resolved either.
+The credentials are in the specification's Linked Data Proof format, signed
+with `eddsa-jcs-2022`. An app MAY also read the JWT format.
+
+**An app checking a link** MUST find all of these, and otherwise show the
+domain as a claim only:
+
+1. The origin is in a `LinkedDomains` service of the DID's document, as
+   resolved and verified.
+2. The file was fetched over HTTPS from that origin's
+   `/.well-known/did-configuration.json`.
+3. It holds a credential whose `issuer` and `credentialSubject.id` are both
+   the DID, and whose `credentialSubject.origin` is that origin.
+4. The time is between its `issuanceDate` and `expirationDate`.
+5. Its proof has the purpose `assertionMethod` and verifies against a key the
+   document lists under `assertionMethod`.
+
+A credential is signed by one key. When that key leaves the document (the
+device that signed it is removed), the link stops verifying until the holder
+replaces the file. Credentials in the file about other DIDs are ignored.
+
+The origin has to let other origins read the file
+(`Access-Control-Allow-Origin`), or an app that runs in a browser cannot
+check it.
 
 ## Message Reference
 
@@ -618,8 +705,8 @@ One attachment, `id` `whois`, `media_type` `application/vp`. Its `data` has
 `base64` and `jws`, a detached signature over the attachment's bytes by an
 `authentication` key of the hosted document. The host MUST check that
 signature, that the presentation's `holder` is the hosted DID, that its proof
-verifies against the hosted document, and that every credential in it is about
-the hosted DID. It answers `status`.
+verifies against the hosted document, and that at least one credential in it
+is about the hosted DID. It answers `status`.
 
 ```json
 {
@@ -765,7 +852,7 @@ message, its `pthid` the id of the message it refuses.
 | Name / Link | Implementation Notes |
 |---|---|
 | [wyvrn-did-host](https://github.com/wyvrn-cloud/services/tree/master/services/did-host) | The host, and in [`wyvrn-hosted-did`](https://github.com/wyvrn-cloud/services/tree/master/crates/wyvrn-hosted-did) resolving and the whois profile, as a library with the fetching left out. |
-| [wyvrn-chat](https://github.com/wyvrn-cloud/chat) | The holder: registers a name from Settings, keeps the address's document in step with its Identity DID, publishes its profile as the whois. And the reader: looks an address up before adding it as a contact. A log's `updateKeys` are its document's `authentication` keys, so each trusted device writes it with its own signing key. |
+| [wyvrn-chat](https://github.com/wyvrn-cloud/chat) | The holder: registers a name from Settings, keeps the address's document in step with its Identity DID, publishes its profile as the whois. And the reader: looks an address up before adding it as a contact. A log's `updateKeys` are its document's `authentication` keys, so each trusted device writes it with its own signing key. Links a website to an address and makes its `did-configuration.json`; checks a link when asked and remembers it with the contact, but does not yet check again by itself. |
 
 ## Endnotes
 
