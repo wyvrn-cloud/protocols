@@ -254,9 +254,11 @@ publishes again.
 
 A holder that never adds or removes a device never publishes again, so
 silence in this protocol means nothing by itself. A host that wants to
-know a name is still wanted asks: it sends a `trust-ping/2.0` to the hosted
-DID, and any authenticated message from the holder afterwards (the ping's
-response, or anything in this protocol) answers it.
+know a name is still wanted asks: it sends a `trust-ping/2.0` to the holder,
+at a `did:peer:4` the hosted document names in `alsoKnownAs` if there is one
+(it carries its own document, so reaching it depends on nothing the host
+serves), else at the hosted DID. Any authenticated message from the holder
+afterwards (the ping's response, or anything in this protocol) answers it.
 
 A host states its own periods. wyvrn's host asks after a year without
 hearing from a holder, and marks the name `stale` after a week without an
@@ -713,7 +715,7 @@ message, its `pthid` the id of the message it refuses.
 
 | Name / Link | Implementation Notes |
 |---|---|
-| [wyvrn-did-host](https://github.com/wyvrn-cloud/services/tree/master/services/did-host) | The host. Knows a sender by its DID rather than by the key it used: it requires every key-agreement key of the sender's DID to be the document's, which comes to the same. No holder (app) side yet. |
+| [wyvrn-did-host](https://github.com/wyvrn-cloud/services/tree/master/services/did-host) | The host, and in [`wyvrn-hosted-did`](https://github.com/wyvrn-cloud/services/tree/master/crates/wyvrn-hosted-did) resolving and the whois profile, as a library with the fetching left out. Knows a sender by its DID rather than by the key it used: it requires every key-agreement key of the sender's DID to be the document's, which comes to the same. No holder (app) side yet. |
 
 ## Endnotes
 
