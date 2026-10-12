@@ -440,6 +440,71 @@ the enrollment exchange rather than defining a new one:
    recipients left registered under it and can simply be abandoned — no
    explicit "terminate" step needed.
 
+**When the document was made.** A document minted by a rotation says when:
+two properties of the Identity DID document itself, both
+[schema.org](https://schema.org) terms and both an XML Schema `dateTime` in
+UTC to the second (`2026-10-12T10:00:00Z`):
+
+| Property | Term | Meaning |
+|---|---|---|
+| `dateCreated` | `https://schema.org/dateCreated` | When the identity was first made. Carried over unchanged from the document being rotated from. |
+| `dateModified` | `https://schema.org/dateModified` | When this document was minted. |
+
+The document's `@context` gains an entry defining the terms it uses:
+
+```json
+{
+  "@context": [
+    "https://www.w3.org/ns/did/v1",
+    "https://w3id.org/security/multikey/v1",
+    { "dateCreated": "https://schema.org/dateCreated", "dateModified": "https://schema.org/dateModified" }
+  ],
+  "dateCreated": "2026-10-01T09:00:00Z",
+  "dateModified": "2026-10-12T10:00:00Z"
+}
+```
+
+DID Core already has `created` and `updated`, but as *metadata about* a
+document, which a method that keeps a history (`did:webvh`) derives from it.
+A `did:peer:4` keeps no history and is nothing but its document, so the
+document is the only place they can be. A resolver MAY report them as the
+`created` and `updated` of the DID document metadata.
+
+`dateModified` is REQUIRED on a document minted by a rotation, and is what
+this protocol relies on: **an identity must never arrive at an Identity DID
+it has been at before.** Without it, undoing a change — enrolling a device
+and revoking it, taking a public address
+([`did-hosting/1.0`](https://wyvrn.app/did-hosting/1.0)) and giving it up —
+mints the very document, and so the very DID, there was before the change.
+Every contact that followed the identity away from that DID has it recorded
+as left behind, and per
+[DIDComm Messaging v2.1](https://identity.foundation/didcomm-messaging/spec/v2.1/)'s
+DID Rotation turns away whatever arrives from it: the identity goes silent
+to all of them, and nothing it sends can put that right. With it, the
+document differs by when it was minted, and the DID is new. A device
+minting a rotation:
+
+- first mints the document with the *same* `dateCreated` and `dateModified`
+  as the one it is rotating from. If that gives the same DID, nothing the
+  document says would change, and there is no rotation: a rotation from
+  a DID to itself must never be signed;
+- otherwise sets `dateModified` to the current time. If the result is an
+  Identity DID it has a record of the identity having been at (two changes
+  within one second that undo each other), it moves `dateModified` on a
+  second at a time until it isn't;
+- sets `dateCreated` to the departing document's, or, if that document has
+  none (it predates this), to when the device has the identity as made.
+
+A sibling does not re-mint the document to check any of this: it adopts the
+Identity DID the signed `device-enroll-response` carries, as it always has.
+A recipient MUST accept a document without either property (an identity's
+first document MAY carry them and one from an older implementation will
+not), and MUST NOT treat either as proof of anything: they are the
+identity's own word. Contacts can already see *that* a document changed,
+since each change reaches them as a rotation; `dateCreated` additionally
+tells every contact how old the identity is, and an implementation MAY
+leave it out for that reason.
+
 **Promotion and demotion** use the exact same mechanism, with no key ever
 changing hands: to be promoted, a device generates its own `authentication`
 keypair locally and sends only the *public* half to a trusted sibling as a
