@@ -349,8 +349,10 @@ host frees it.
 
 Given a `did:web`:
 
-1. Resolve it. If its `alsoKnownAs` names a `did:webvh` at the same host and
-   path, resolve that, verifying its log.
+1. Resolve it. If its `alsoKnownAs` names a `did:webvh`, resolve that,
+   verifying its log: the one at the same host and path if it names one (the
+   `did:webvh` it is the parallel of), otherwise the first it names, wherever
+   that is hosted (see [A service's address](#a-services-address)).
 2. Accept the pair only if the `did:webvh` document's `alsoKnownAs` names the
    `did:web` back. If it does not, or the log does not verify, the `did:web`
    stands alone and is trusted no further than any `did:web`.
@@ -367,6 +369,34 @@ That closes the circle: `did:peer:4` → `did:web` → `did:webvh` →
 
 A hosted DID is shared as itself, or in a link an app opens:
 `https://<app>/dl/<did>`.
+
+### A service's address
+
+A service is usually the `did:web` of its own domain
+(`did:web:news.example`): whatever that domain serves today, with no history.
+It can hold a hosted DID as well, as a person does, and be known by it:
+
+- The hosted DID's document is the service's own under the hosted DID's
+  name: the same keys, and the same `DIDCommMessaging` service, so that the
+  way in is still the service's own domain. Its `alsoKnownAs` names the
+  parallel `did:web`, as every hosted DID's does, and the service's
+  `did:web`.
+- The service's `did:web` document names the `did:webvh` in its
+  `alsoKnownAs`.
+
+Whoever resolves either `did:web` then arrives at the `did:webvh`, by the
+steps above, and knows the service by it: its history verifies, its whois is
+the one beside its log at the host, and a mark the host's name carries (see
+[Marks of authenticity](#marks-of-authenticity)) is the service's. A
+`did:web` that names a `did:webvh` which does not name it back gains
+nothing.
+
+Following a `did:webvh` hosted elsewhere fetches from that host, which
+learns that someone looked. An app that looks a `did:web` up has already
+told the `did:web`'s own domain as much.
+
+An app writes to such a service at its `did:web`, which is the DID the
+service answers as, and keeps the `did:webvh` as who it is.
 
 ## The whois profile
 
