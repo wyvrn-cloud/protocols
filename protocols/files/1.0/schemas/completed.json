@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "files/1.0/completed",
+  "description": "The file is stored and fetchable.",
+  "type": "object",
+  "required": [
+    "id",
+    "type",
+    "from",
+    "created_time",
+    "body",
+    "thid"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Message ID, unique to the sender."
+    },
+    "from": {
+      "type": "string",
+      "pattern": "^did:[a-z0-9]+:[^#]+$",
+      "description": "The host's DID."
+    },
+    "to": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^did:[a-z0-9]+:[^#]+$"
+      }
+    },
+    "created_time": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "UTC epoch seconds."
+    },
+    "thid": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The id of the message this answers."
+    },
+    "type": {
+      "const": "https://wyvrn.app/files/1.0/completed"
+    },
+    "body": {
+      "type": "object",
+      "properties": {
+        "file": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The host's id for the file."
+        },
+        "url": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^https?://",
+          "description": "Where the file is fetched from: an attachment's data.links entry."
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "media_type": {
+          "type": "string",
+          "minLength": 1
+        },
+        "byte_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "hash": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Base58btc multihash of the bytes exactly as put (sha2-256 at least)."
+        },
+        "expires_time": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "When the file goes."
+        }
+      },
+      "required": [
+        "file",
+        "url",
+        "name",
+        "media_type",
+        "byte_count",
+        "hash",
+        "expires_time"
+      ]
+    }
+  }
+}

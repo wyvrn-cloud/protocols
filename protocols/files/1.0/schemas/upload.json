@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "files/1.0/upload",
+  "description": "Asks a host for room for one file.",
+  "type": "object",
+  "required": [
+    "id",
+    "type",
+    "from",
+    "created_time",
+    "body"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Message ID, unique to the sender."
+    },
+    "from": {
+      "type": "string",
+      "pattern": "^did:[a-z0-9]+:[^#]+$",
+      "description": "The uploader's DID: always present, the message is sender-authenticated."
+    },
+    "to": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^did:[a-z0-9]+:[^#]+$"
+      }
+    },
+    "created_time": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "UTC epoch seconds."
+    },
+    "return_route": {
+      "type": "string",
+      "description": "Usually \"all\": answered in the same HTTP response."
+    },
+    "type": {
+      "const": "https://wyvrn.app/files/1.0/upload"
+    },
+    "body": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 255,
+          "pattern": "^[^/\\\\]+$",
+          "description": "A file name, no path separators."
+        },
+        "media_type": {
+          "type": "string",
+          "minLength": 1
+        },
+        "byte_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "How many bytes will be put, exactly."
+        },
+        "hash": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Base58btc multihash of the bytes exactly as put (sha2-256 at least)."
+        },
+        "keep_seconds": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "How long to keep the file once complete."
+        }
+      },
+      "required": [
+        "name",
+        "media_type",
+        "byte_count",
+        "hash"
+      ]
+    }
+  }
+}

@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "files/1.0/upload-granted",
+  "description": "Where to put the bytes, and how much is there already.",
+  "type": "object",
+  "required": [
+    "id",
+    "type",
+    "from",
+    "created_time",
+    "body",
+    "thid"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Message ID, unique to the sender."
+    },
+    "from": {
+      "type": "string",
+      "pattern": "^did:[a-z0-9]+:[^#]+$",
+      "description": "The host's DID."
+    },
+    "to": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^did:[a-z0-9]+:[^#]+$"
+      }
+    },
+    "created_time": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "UTC epoch seconds."
+    },
+    "thid": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The id of the message this answers."
+    },
+    "type": {
+      "const": "https://wyvrn.app/files/1.0/upload-granted"
+    },
+    "body": {
+      "type": "object",
+      "properties": {
+        "file": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The host's id for the file."
+        },
+        "upload_url": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^https?://",
+          "description": "Where to PUT the bytes. Unguessable; for the uploader alone."
+        },
+        "chunk_bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "The most bytes one PUT may carry."
+        },
+        "offset": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "How many bytes the host holds already."
+        },
+        "upload_expires_time": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "When an upload not yet completed is dropped."
+        },
+        "expires_time": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "When the file will go once complete."
+        }
+      },
+      "required": [
+        "file",
+        "upload_url",
+        "chunk_bytes",
+        "offset",
+        "upload_expires_time",
+        "expires_time"
+      ]
+    }
+  }
+}

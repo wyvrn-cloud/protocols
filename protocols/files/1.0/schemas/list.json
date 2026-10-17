@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "files/1.0/list",
+  "description": "Asks what the uploader has at the host. The body is empty.",
+  "type": "object",
+  "required": [
+    "id",
+    "type",
+    "from",
+    "created_time",
+    "body"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Message ID, unique to the sender."
+    },
+    "from": {
+      "type": "string",
+      "pattern": "^did:[a-z0-9]+:[^#]+$",
+      "description": "The uploader's DID: always present, the message is sender-authenticated."
+    },
+    "to": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^did:[a-z0-9]+:[^#]+$"
+      }
+    },
+    "created_time": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "UTC epoch seconds."
+    },
+    "return_route": {
+      "type": "string",
+      "description": "Usually \"all\": answered in the same HTTP response."
+    },
+    "type": {
+      "const": "https://wyvrn.app/files/1.0/list"
+    },
+    "body": {
+      "type": "object",
+      "properties": {}
+    }
+  }
+}

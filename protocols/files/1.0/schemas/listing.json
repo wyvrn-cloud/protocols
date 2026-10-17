@@ -1,0 +1,135 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "files/1.0/listing",
+  "description": "Every file the uploader has at the host, with its quota.",
+  "type": "object",
+  "required": [
+    "id",
+    "type",
+    "from",
+    "created_time",
+    "body",
+    "thid"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Message ID, unique to the sender."
+    },
+    "from": {
+      "type": "string",
+      "pattern": "^did:[a-z0-9]+:[^#]+$",
+      "description": "The host's DID."
+    },
+    "to": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^did:[a-z0-9]+:[^#]+$"
+      }
+    },
+    "created_time": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "UTC epoch seconds."
+    },
+    "thid": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The id of the message this answers."
+    },
+    "type": {
+      "const": "https://wyvrn.app/files/1.0/listing"
+    },
+    "body": {
+      "type": "object",
+      "properties": {
+        "quota_bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "used_bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "files": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "file",
+              "name",
+              "media_type",
+              "byte_count",
+              "hash",
+              "state",
+              "expires_time"
+            ],
+            "properties": {
+              "file": {
+                "type": "string",
+                "minLength": 1,
+                "description": "The host's id for the file."
+              },
+              "name": {
+                "type": "string"
+              },
+              "media_type": {
+                "type": "string"
+              },
+              "byte_count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "hash": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Base58btc multihash of the bytes exactly as put (sha2-256 at least)."
+              },
+              "state": {
+                "enum": [
+                  "uploading",
+                  "stored"
+                ]
+              },
+              "expires_time": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "UTC epoch seconds."
+              },
+              "url": {
+                "type": "string",
+                "format": "uri",
+                "pattern": "^https?://"
+              },
+              "offset": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "upload_url": {
+                "type": "string",
+                "format": "uri",
+                "pattern": "^https?://"
+              },
+              "upload_expires_time": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "UTC epoch seconds."
+              }
+            }
+          },
+          "description": "Newest first."
+        },
+        "truncated": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "quota_bytes",
+        "used_bytes",
+        "files"
+      ]
+    }
+  }
+}
