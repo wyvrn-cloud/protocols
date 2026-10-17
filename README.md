@@ -85,6 +85,7 @@ implementing it would move to the real `didcomm.org` PIURI.
 | [`disappearing-messages`](protocols/disappearing-messages/1.0/readme.md) | 1.0 | Proposed | none yet -- a per-conversation timer, via `expires_time` |
 | [`link-preview`](protocols/link-preview/1.0/readme.md) | 1.0 | Proposed | none yet -- a web device asks its own native sibling to build a link preview |
 | [`files`](protocols/files/1.0/readme.md) | 1.0 | Proposed | [`wyvrn-services`](https://github.com/wyvrn-cloud/services) (`services/files`, host), [`didcomm-rpc`](https://github.com/frostyfrog/didcomm-rpc) (uploader) -- putting a large file at a host in resumable chunks, to hand out as an attachment by reference |
+| [`didcomm-rpc`](protocols/didcomm-rpc/1.0/readme.md) | 1.0 | Proposed | [`didcomm-rpc`](https://github.com/frostyfrog/didcomm-rpc) -- a controller runs commands on, and moves files to and from, a device it is allowed to drive, through a mediator; large files by `files/1.0` |
 | [`multi-device`](protocols/multi-device/1.0/readme.md) | 1.0 | Implemented | [`wyvrn-chat`](../wyvrn-chat) |
 | [`history-sync`](protocols/history-sync/1.0/readme.md) | 1.0 | Implemented | [`wyvrn-chat`](../wyvrn-chat) |
 | [`history-sync`](protocols/history-sync/1.1/readme.md) | 1.1 | Proposed | none yet -- editable messages, new synced collections (follows, bookmarks, mutes, blocks, sticker packs), search across a person's devices |

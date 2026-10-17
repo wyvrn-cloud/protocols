@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "didcomm-rpc/1.0/status-result",
+  "description": "What the device is.",
+  "type": "object",
+  "required": [
+    "id",
+    "type",
+    "from",
+    "created_time",
+    "body",
+    "thid"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Message ID, unique to the sender; carried out at most once."
+    },
+    "from": {
+      "type": "string",
+      "pattern": "^did:[a-z0-9]+:[^#]+$",
+      "description": "The device's DID."
+    },
+    "to": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^did:[a-z0-9]+:[^#]+$"
+      }
+    },
+    "created_time": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "UTC epoch seconds."
+    },
+    "thid": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The request's id."
+    },
+    "type": {
+      "const": "https://wyvrn.app/didcomm-rpc/1.0/status-result"
+    },
+    "body": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "type": "string"
+        },
+        "hostname": {
+          "type": "string"
+        },
+        "os": {
+          "type": "string"
+        },
+        "uptime_seconds": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "load": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "disk_free_bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "controllers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "files_host": {
+          "type": "string",
+          "pattern": "^did:[a-z0-9]+:[^#]+$"
+        }
+      },
+      "required": [
+        "version",
+        "controllers"
+      ]
+    }
+  }
+}

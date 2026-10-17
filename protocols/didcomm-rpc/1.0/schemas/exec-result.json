@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "didcomm-rpc/1.0/exec-result",
+  "description": "What the program did and wrote.",
+  "type": "object",
+  "required": [
+    "id",
+    "type",
+    "from",
+    "created_time",
+    "body",
+    "thid"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Message ID, unique to the sender; carried out at most once."
+    },
+    "from": {
+      "type": "string",
+      "pattern": "^did:[a-z0-9]+:[^#]+$",
+      "description": "The device's DID."
+    },
+    "to": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^did:[a-z0-9]+:[^#]+$"
+      }
+    },
+    "created_time": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "UTC epoch seconds."
+    },
+    "thid": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The request's id."
+    },
+    "type": {
+      "const": "https://wyvrn.app/didcomm-rpc/1.0/exec-result"
+    },
+    "body": {
+      "type": "object",
+      "properties": {
+        "exit_code": {
+          "type": "integer"
+        },
+        "signal": {
+          "type": "integer"
+        },
+        "timed_out": {
+          "type": "boolean"
+        },
+        "duration_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "stdout": {
+          "type": "string"
+        },
+        "stderr": {
+          "type": "string"
+        },
+        "truncated": {
+          "type": "boolean"
+        },
+        "outputs": {
+          "type": "object",
+          "properties": {
+            "stdout": {
+              "type": "string",
+              "minLength": 1,
+              "description": "The id of an entry in attachments[]."
+            },
+            "stderr": {
+              "type": "string",
+              "minLength": 1,
+              "description": "The id of an entry in attachments[]."
+            }
+          }
+        }
+      },
+      "required": [
+        "duration_ms",
+        "stdout",
+        "stderr",
+        "truncated"
+      ]
+    }
+  }
+}

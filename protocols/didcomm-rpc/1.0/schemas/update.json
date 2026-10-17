@@ -1,0 +1,131 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "didcomm-rpc/1.0/update",
+  "description": "Replaces the daemon with the attached build.",
+  "type": "object",
+  "required": [
+    "id",
+    "type",
+    "from",
+    "created_time",
+    "body",
+    "expires_time",
+    "attachments"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Message ID, unique to the sender; carried out at most once."
+    },
+    "from": {
+      "type": "string",
+      "pattern": "^did:[a-z0-9]+:[^#]+$",
+      "description": "The controller's DID: always present, the request is sender-authenticated."
+    },
+    "to": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^did:[a-z0-9]+:[^#]+$"
+      }
+    },
+    "created_time": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "UTC epoch seconds."
+    },
+    "expires_time": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "REQUIRED on a request: not carried out after this."
+    },
+    "type": {
+      "const": "https://wyvrn.app/didcomm-rpc/1.0/update"
+    },
+    "body": {
+      "type": "object",
+      "properties": {
+        "file": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The id of an entry in attachments[]."
+        },
+        "hash": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Base58btc multihash of the bytes (sha2-256)."
+        },
+        "version": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "file",
+        "hash"
+      ]
+    },
+    "attachments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "data"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "filename": {
+            "type": "string"
+          },
+          "media_type": {
+            "type": "string"
+          },
+          "byte_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "base64": {
+                "type": "string",
+                "description": "The bytes inline, base64url: at most 64 KiB decoded."
+              },
+              "links": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "format": "uri"
+                },
+                "minItems": 1,
+                "description": "Where to fetch the bytes (files/1.0)."
+              },
+              "hash": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Base58btc multihash of the bytes (sha2-256)."
+              }
+            },
+            "anyOf": [
+              {
+                "required": [
+                  "base64"
+                ]
+              },
+              {
+                "required": [
+                  "links",
+                  "hash"
+                ]
+              }
+            ]
+          }
+        }
+      }
+    }
+  }
+}
